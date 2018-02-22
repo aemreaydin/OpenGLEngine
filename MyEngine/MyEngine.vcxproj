@@ -143,6 +143,11 @@
     <ClInclude Include="cMesh.h" />
     <ClInclude Include="cModel.h" />
     <ClInclude Include="cShader.h" />
+    <ClInclude Include="eDepthType.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders\simpleFragment.glsl" />
+    <None Include="assets\shaders\simpleVertex.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
