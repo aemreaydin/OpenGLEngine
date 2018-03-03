@@ -126,23 +126,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="cFBO.cpp" />
     <ClCompile Include="cGameObject.cpp" />
     <ClCompile Include="cGLCalls.cpp" />
     <ClCompile Include="cLightManager.cpp" />
     <ClCompile Include="cMesh.cpp" />
     <ClCompile Include="cModel.cpp" />
     <ClCompile Include="cShader.cpp" />
+    <ClCompile Include="cSkybox.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="src\glad.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="cFBO.h" />
     <ClInclude Include="cGameObject.h" />
     <ClInclude Include="cGLCalls.h" />
     <ClInclude Include="cLightManager.h" />
     <ClInclude Include="cMesh.h" />
     <ClInclude Include="cModel.h" />
     <ClInclude Include="cShader.h" />
+    <ClInclude Include="cSkybox.h" />
     <ClInclude Include="eDepthType.h" />
   </ItemGroup>
   <ItemGroup>

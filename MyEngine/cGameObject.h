@@ -8,6 +8,10 @@
 #include <string>
 
 #include "cModel.h"
+#include "cSkybox.h"
+
+
+class cSkybox;
 
 class cGameObject
 {
@@ -17,8 +21,11 @@ public:
 
 	cModel* Model;
 
-	cGameObject(std::string modelName, std::string modelDir);
-	cGameObject(std::string modelName, std::string modelDir, glm::vec3 position, glm::vec3 scale, glm::vec3 orientationEuler);
+	cGameObject(std::string modelName, std::string modelDir, bool skybox = false, std::string folder = "");
+	cGameObject(std::string modelName, std::string modelDir, glm::vec3 position, glm::vec3 scale, glm::vec3 orientationEuler, bool skybox = false, std::string folder = "");
 	void Draw(cShader Shader);
+
+	bool isSkybox;
+	cSkybox* Skybox;
 };
 #endif // !_GAME_OBJECT_
