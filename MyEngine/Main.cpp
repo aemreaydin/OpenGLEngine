@@ -25,7 +25,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 cGLCalls* GLCalls;
-cShader * Shader, * LampShader, * StencilShader, *SkyboxShader;
+cShader * Shader, * LampShader, * StencilShader, * SkyboxShader, * FBOShader;
 cGameObject * Nanosuit, * SanFran;
 cLightManager * LightManager;
 cFBO * FBO, * DeferredRender;
@@ -104,6 +104,7 @@ int main(int argc, char **argv)
 	LampShader = new cShader("assets/shaders/lampShader.glsl", "assets/shaders/lampFragment.glsl");
 	StencilShader = new cShader("assets/shaders/simpleVertex.glsl", "assets/shaders/stencilFragment.glsl");
 	SkyboxShader = new cShader("assets/shaders/skyboxVert.glsl", "assets/shaders/skyboxFrag.glsl");
+	FBOShader = new cShader("assets/shaders/fboVert.glsl", "assets/shaders/fboFrag.glsl");
 
 	FBO = new cFBO(width, height);
 	DeferredRender = new cFBO(width, height);
@@ -124,7 +125,6 @@ int main(int argc, char **argv)
 	//GOVec.push_back(Nanosuit);
 	GOVec.push_back(SanFran);
 
-	Shader->SetInteger("screenTexture", 0, true);
 
 
 	while (!glfwWindowShouldClose(GLCalls->GetWindow()))
@@ -135,8 +135,22 @@ int main(int argc, char **argv)
 
 		processInput(GLCalls->GetWindow());
 
-		RenderScene();
+		//FBO->BindFBO();
+		//FBO->ClearBuffers();
+		//glEnable(GL_DEPTH_TEST);
+
+		//RenderScene();
 		RenderSkybox();
+
+		//FBO->UnbindFBO();
+		//glDisable(GL_DEPTH_TEST);
+		//glClearColor(1.f, 1.f, 1.f, 1.f);
+		//glClear(GL_COLOR_BUFFER_BIT);
+
+		//FBOShader->Use();
+		//FBOShader->SetInteger("screenTexture", 0, true);
+		//FBO->Draw(*FBOShader);
+
 
 		glfwPollEvents();
 		glfwSwapBuffers(GLCalls->GetWindow());
@@ -147,10 +161,7 @@ int main(int argc, char **argv)
 }
 
 void RenderScene()
-
 {
-	glClearColor(0.8f, 0.3f, 0.8f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	Shader->Use();
 	glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
 	glm::mat4 view = camera.GetViewMatrix();

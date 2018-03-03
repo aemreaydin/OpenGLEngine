@@ -56,42 +56,30 @@ void main()
 	FragNormal = vec4(0.0f, 0.0f, 0.0f, 0.25f);
 	FragVertex = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-	if(numPass == 1)
+	vec3 norm = normalize(Normal);
+	vec3 viewDir = normalize(eyePos - ObjectPosition);
+	vec4 textureColor = (texture(texture_diffuse1, TexCoords));
+						//+ texture(texture_specular1, TexCoords));
+						//+ texture(texture_normal1, TexCoords));
+
+
+	vec2 textScreenCoords = vec2(gl_FragCoord.x / screenWidth, gl_FragCoord.y / screenHeight);
+	vec4 colorAtThisPixel = texture(texFBOColor, TexCoords).rgba;
+	vec4 normalAtThisPixel = texture(texFBONormal, TexCoords).rgba;
+	vec4 vertexAtThisPixel = texture(texFBOVertex, TexCoords).rgba;
+						
+	vec3 result = vec3(0.0, 0.0, 0.0);
+	for(int i = 0; i < NumLights; i++)
 	{
-		vec3 norm = normalize(Normal);
-		vec3 viewDir = normalize(eyePos - ObjectPosition);
-		vec4 textureColor = (texture(texture_diffuse1, TexCoords));
-							//+ texture(texture_specular1, TexCoords));
-							//+ texture(texture_normal1, TexCoords));
-		FragColor = textureColor;
-		FragNormal = Normal;
-		FragVertex = ObjectPosition;
+		if(Lights[i].LightType == 0)
+			result += calcDirectionalLight(Lights[i], norm.rgb, viewDir, textureColor.rgba);			
+		else if(Lights[i].LightType == 1)
+			result += calcPointLight(Lights[i], norm.rgb, ObjectPosition.rgb, viewDir, textureColor.rgba);
+		else if(Lights[i].LightType == 2)
+			result += calcSpotLight(Lights[i], norm.rgb, ObjectPosition.rgb, viewDir, textureColor.rgba);
 	}
-	else if(numPass == 2)
-	{
-		vec2 textScreenCoords = vec2(gl_FragCoord.x / screenWidth, gl_FragCoord.y / screenHeight);
-		vec4 colorAtThisPixel = texture(texFBOColor, TexCoords).rgba;
-		vec4 normalAtThisPixel = texture(texFBONormal, TexCoords).rgba;
-		vec4 vertexAtThisPixel = texture(texFBOVertex, TexCoords).rgba;
-							
-		vec3 result = vec3(0.0, 0.0, 0.0);
-		for(int i = 0; i < NumLights; i++)
-		{
-			if(Lights[i].LightType == 0)
-				result += calcDirectionalLight(Lights[i], normalAtThisPixel.rgb, viewDir, colorAtThisPixel.rgba);			
-			else if(Lights[i].LightType == 1)
-				result += calcPointLight(Lights[i], normalAtThisPixel.rgb, vertexAtThisPixel.rgb, viewDir, colorAtThisPixel.rgba);
-			else if(Lights[i].LightType == 2)
-				result += calcSpotLight(Lights[i], normalAtThisPixel.rgb, vertexAtThisPixel.rgb, viewDir, colorAtThisPixel.rgba);
-		}
-		FragColor = vec4(result, 1.0);
-	}
-	else if (numPass == 3)
-	{
-		FragColor.rgb = texture(FBOFinalImage, TexCoords).rgb;
-		FragColor.a = 1.0f;
-	}
-	//FragColor = vec4(vec3(gl_FragCoord.z), 1.0)
+	FragColor = vec4(textureColor.rgb, 1.0);
+
 }
 
 
