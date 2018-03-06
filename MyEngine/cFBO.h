@@ -19,11 +19,12 @@ public:
 	GLuint texVertexBuffer;
 	GLuint texDepthBuffer;
 	GLint  numPass;
+	GLuint sWidth;
+	void Reset(GLuint width, GLuint height);
+	GLuint sHeight;
 private:
 	GLuint fbo;
 	GLuint rbo;
-	GLuint sWidth;
-	GLuint sHeight;
 	bool fboInit();
 	bool rboInit();
 

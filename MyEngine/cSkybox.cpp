@@ -5,12 +5,12 @@
 #include <fstream>
 #include <iostream>
 
-cSkybox::cSkybox(std::string folder)
+cSkybox::cSkybox(std::string folder, cShader shader)
 {
 	this->folderName = folder;
 	this->textureID = -1;
 
-
+	this->shader = &shader;
 
 	init();
 }
@@ -104,14 +104,16 @@ void cSkybox::init()
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+
+	GLuint skyboxPos = glGetAttribLocation(this->shader->ID, "skyboxPosition");
+	glEnableVertexAttribArray(skyboxPos);
+	glVertexAttribPointer(skyboxPos, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
 }
 
 void cSkybox::Draw(cShader shader)
 {
 	glBindVertexArray(this->VAO);
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE20);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, this->textureID);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);

@@ -25,10 +25,12 @@
 #include <glm/gtc/type_ptr.hpp>
 
 cGLCalls* GLCalls;
-cShader * Shader, * LampShader, * StencilShader, * SkyboxShader, * FBOShader;
+extern cShader * Shader;
+cShader * LampShader, * StencilShader, * SkyboxShader, * FBOShader;
 cGameObject * Nanosuit, * SanFran;
 cLightManager * LightManager;
-cFBO * FBO, * DeferredRender;
+
+std::vector<cFBO*> FBOs;
 
 std::vector< cGameObject * > GOVec;
 std::vector< cGameObject * > GOSkybox;
@@ -40,6 +42,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void windowSizeCallback(GLFWwindow* window, int width, int height);
 void RenderScene();
 void RenderFboScene();
 void RenderSkybox();
@@ -62,6 +65,7 @@ int depthIndex = 0;
 
 TEST(TC_INIT, InitializeGLFW)
 {
+	GLCalls = new cGLCalls(width, height, "AssimpImport");
 	ASSERT_TRUE(GLCalls->Initialize() == GL_TRUE);
 }
 TEST(TC_CREATE_WINDOW, CreateGLWindow)
@@ -71,8 +75,6 @@ TEST(TC_CREATE_WINDOW, CreateGLWindow)
 
 int main(int argc, char **argv)
 {
-	GLCalls = new cGLCalls(width, height, "AssimpImport");
-
 	::testing::InitGoogleTest(&argc, argv);
 	RUN_ALL_TESTS();	
 
@@ -80,17 +82,11 @@ int main(int argc, char **argv)
 	glfwSetCursorPosCallback(GLCalls->GetWindow(), mouse_callback);
 	glfwSetScrollCallback(GLCalls->GetWindow(), scroll_callback);
 	glfwSetKeyCallback(GLCalls->GetWindow(), keyCallback);
-	//glfwSetInputMode(GLCalls->GetWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetWindowSizeCallback(GLCalls->GetWindow(), windowSizeCallback);
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glDepthFunc(GL_LESS);
-	//glFrontFace(GL_CW);
-	//glCullFace(GL_FRONT);
-	//glCullFace(GL_BACK);
-	glEnable(GL_STENCIL_TEST);
-	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -106,8 +102,8 @@ int main(int argc, char **argv)
 	SkyboxShader = new cShader("assets/shaders/skyboxVert.glsl", "assets/shaders/skyboxFrag.glsl");
 	FBOShader = new cShader("assets/shaders/fboVert.glsl", "assets/shaders/fboFrag.glsl");
 
-	FBO = new cFBO(width, height);
-	DeferredRender = new cFBO(width, height);
+	FBOs.push_back(new cFBO(width, height));
+	FBOs.push_back(new cFBO(width, height));
 
 	Nanosuit = new cGameObject("Nanosuit", "assets/models/nanosuit/nanosuit.obj", glm::vec3(7.0f, 0.0f, 0.0f), glm::vec3(0.2), glm::vec3(0.0f));	
 	SanFran = new cGameObject("Tree", "assets/models/sanfrancisco/houseSF.obj", glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(0.5f), glm::vec3(90.0f, 90.0f, 0.0f));
@@ -122,7 +118,7 @@ int main(int argc, char **argv)
 
 	//LightManager->LoadLampsIntoShader(*Shader);
 
-	//GOVec.push_back(Nanosuit);
+	GOVec.push_back(Nanosuit);
 	GOVec.push_back(SanFran);
 
 
@@ -134,22 +130,20 @@ int main(int argc, char **argv)
 		lastFrame = currentFrame;
 
 		processInput(GLCalls->GetWindow());
+		glfwGetFramebufferSize(GLCalls->GetWindow(), &width, &height);
 
-		//FBO->BindFBO();
-		//FBO->ClearBuffers();
-		//glEnable(GL_DEPTH_TEST);
-
-		//RenderScene();
+		FBOs[0]->BindFBO();
+		FBOs[0]->ClearBuffers();
+		glEnable(GL_DEPTH_TEST);
+		glClearColor(0.f, 1.f, 1.f, 1.f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+		Shader->SetInteger("isSecondPass", false);
 		RenderSkybox();
+		RenderScene();
 
-		//FBO->UnbindFBO();
-		//glDisable(GL_DEPTH_TEST);
-		//glClearColor(1.f, 1.f, 1.f, 1.f);
-		//glClear(GL_COLOR_BUFFER_BIT);
-
-		//FBOShader->Use();
-		//FBOShader->SetInteger("screenTexture", 0, true);
-		//FBO->Draw(*FBOShader);
+		FBOs[0]->UnbindFBO();
+		FBOs[0]->Draw(*Shader);
 
 
 		glfwPollEvents();
@@ -165,13 +159,13 @@ void RenderScene()
 	Shader->Use();
 	glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
 	glm::mat4 view = camera.GetViewMatrix();
-	Shader->SetMatrix4("projection", projection, true);
-	Shader->SetMatrix4("view", view, true);
+	Shader->SetMatrix4("projection", projection);
+	Shader->SetMatrix4("view", view);
 	Shader->SetVector3f("eyePos", camera.GetPosition());
 
-	LampShader->Use();
-	LampShader->SetMatrix4("projection", projection, true);
-	LampShader->SetMatrix4("view", view, true);
+	//LampShader->Use();
+	//LampShader->SetMatrix4("projection", projection, true);
+	//LampShader->SetMatrix4("view", view, true);
 	LightManager->LoadLightsIntoShader(*Shader);
 
 	//StencilShader->Use();
@@ -193,18 +187,25 @@ void RenderScene()
 		Shader->SetMatrix4("model", model, true);
 		GOVec[i]->Draw(*Shader);
 	}
+	for (int i = 0; i < LightManager->NumLights; i++)
+	{
+		glm::mat4 lightModel = glm::mat4(1.0f);
+		lightModel = glm::translate(lightModel, LightManager->Lights[i].position);
+		lightModel = glm::scale(lightModel, glm::vec3(0.2f));
+		Shader->SetMatrix4("lightModel", lightModel, true);
+	}
+	LightManager->DrawLightsIntoScene(*LampShader);
 
 
-
-	Shader->Use();
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, Nanosuit->Position);
-	model = glm::rotate(model, glm::radians(Nanosuit->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(Nanosuit->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(Nanosuit->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
-	model = glm::scale(model, Nanosuit->Scale);
-	Shader->SetMatrix4("model", model, true);
-	Nanosuit->Draw(*Shader);
+	//Shader->Use();
+	//glm::mat4 model = glm::mat4(1.0f);
+	//model = glm::translate(model, Nanosuit->Position);
+	//model = glm::rotate(model, glm::radians(Nanosuit->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
+	//model = glm::rotate(model, glm::radians(Nanosuit->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	//model = glm::rotate(model, glm::radians(Nanosuit->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
+	//model = glm::scale(model, Nanosuit->Scale);
+	//Shader->SetMatrix4("model", model, true);
+	//Nanosuit->Draw(*Shader);
 
 	//glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
 	//glStencilMask(0x00);
@@ -259,20 +260,19 @@ void RenderFboScene()
 
 void RenderSkybox()
 {
-	glDepthFunc(GL_LEQUAL);
-	
+	glDepthFunc(GL_LEQUAL);	
 
-	SkyboxShader->Use();
-	SkyboxShader->SetInteger("skybox", 0);
+	Shader->Use();
+	Shader->SetInteger("skybox", 20);
+	Shader->SetInteger("isSkybox", true);
 	glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
 	glm::mat4 view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
-	SkyboxShader->SetMatrix4("projection", projection, true);
-	SkyboxShader->SetMatrix4("view", view, true);
+	Shader->SetMatrix4("projection", projection, true);
+	Shader->SetMatrix4("view", view, true);
 
-	glBindTexture(GL_TEXTURE_CUBE_MAP, GOSkybox[currentSkybox]->Skybox->textureID);
-	GOSkybox[currentSkybox]->Draw(*SkyboxShader);
-	
+	GOSkybox[currentSkybox]->Draw(*Shader);	
 
+	Shader->SetInteger("isSkybox", false);
 	glDepthFunc(GL_LESS);
 }
 
@@ -303,27 +303,45 @@ void processInput(GLFWwindow *window)
 
 	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
 	{
-		LightManager->Lights[currentLight].position.x += 0.01f;
+		if (LightManager->Lights[currentLight].lightType == DIRECTIONAL_LIGHT)
+			LightManager->Lights[currentLight].direction.x += 0.01f;
+		else
+			LightManager->Lights[currentLight].position.x += 0.01f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
 	{
-		LightManager->Lights[currentLight].position.x -= 0.01f;
+		if (LightManager->Lights[currentLight].lightType == DIRECTIONAL_LIGHT)
+			LightManager->Lights[currentLight].direction.x -= 0.01f;
+		else
+			LightManager->Lights[currentLight].position.x -= 0.01f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
 	{
-		LightManager->Lights[currentLight].position.z += 0.01f;
+		if (LightManager->Lights[currentLight].lightType == DIRECTIONAL_LIGHT)
+			LightManager->Lights[currentLight].direction.z += 0.01f;
+		else
+			LightManager->Lights[currentLight].position.z += 0.01f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
 	{
-		LightManager->Lights[currentLight].position.z -= 0.01f;
+		if (LightManager->Lights[currentLight].lightType == DIRECTIONAL_LIGHT)
+			LightManager->Lights[currentLight].direction.z -= 0.01f;
+		else
+			LightManager->Lights[currentLight].position.z -= 0.01f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
 	{
-		LightManager->Lights[currentLight].position.y += 0.01f;
+		if (LightManager->Lights[currentLight].lightType == DIRECTIONAL_LIGHT)
+			LightManager->Lights[currentLight].direction.y += 0.01f;
+		else
+			LightManager->Lights[currentLight].position.y += 0.01f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
 	{
-		LightManager->Lights[currentLight].position.y -= 0.01f;
+		if (LightManager->Lights[currentLight].lightType == DIRECTIONAL_LIGHT)
+			LightManager->Lights[currentLight].direction.y -= 0.01f;
+		else
+			LightManager->Lights[currentLight].position.y -= 0.01f;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
@@ -370,4 +388,15 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	camera.ProcessMouseScroll(yoffset);
+}
+
+void windowSizeCallback(GLFWwindow* window, int width, int height)
+{
+	for (int i = 0; i != FBOs.size(); i++)
+	{
+		if (FBOs[i]->sWidth != width || FBOs[i]->sHeight != height)
+		{
+			FBOs[i]->Reset(width, height);
+		}
+	}
 }

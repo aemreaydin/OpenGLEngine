@@ -12,7 +12,7 @@ class cShader;
 class cSkybox
 {
 public:
-	cSkybox(std::string folder);
+	cSkybox(std::string folder, cShader shader);
 	bool LoadCubeMap();
 	void Draw(cShader shader);
 
@@ -23,5 +23,6 @@ private:
 	void init();
 	std::string folderName;
 	GLuint VAO, VBO;
+	cShader* shader;
 };
 #endif // !_SKYBOX_HG_

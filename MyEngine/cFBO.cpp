@@ -7,32 +7,32 @@ cFBO::cFBO(GLuint width, GLuint height)
 	this->sWidth = width;
 	this->sHeight = height;
 
-	//float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-	//						 // positions   // texCoords
-	//	-1.0f,  1.0f,  0.0f, 1.0f,
-	//	-1.0f, -1.0f,  0.0f, 0.0f,
-	//	1.0f, -1.0f,  1.0f, 0.0f,
+	float quadVertices[] = { 
 
-	//	-1.0f,  1.0f,  0.0f, 1.0f,
-	//	1.0f, -1.0f,  1.0f, 0.0f,
-	//	1.0f,  1.0f,  1.0f, 1.0f
-	//};
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		-1.0f, -1.0f,  0.0f, 0.0f,
+		1.0f, -1.0f,  1.0f, 0.0f,
 
-	//glGenVertexArrays(1, &VAO);
-	//glGenBuffers(1, &VBO);
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		1.0f, -1.0f,  1.0f, 0.0f,
+		1.0f,  1.0f,  1.0f, 1.0f
+	};
 
-	//glBindVertexArray(VAO);
-	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
 
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-	//glEnableVertexAttribArray(0);
-	//glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
 
-	//glEnableVertexAttribArray(1);
-	//glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 
-	//glBindVertexArray(0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+	glBindVertexArray(0);
 
 	fboInit();
 	return;
@@ -124,10 +124,50 @@ bool cFBO::rboInit()
 
 	return true;
 }
+void cFBO::Reset(GLuint width, GLuint height)
+{
+	glDeleteTextures(1, &(this->texColorBuffer));
+	glDeleteTextures(1, &(this->texNormalBuffer));
+	glDeleteTextures(1, &(this->texVertexBuffer));
+	glDeleteTextures(1, &(this->texDepthBuffer));
+
+	glDeleteFramebuffers(1, &(this->fbo));
+
+
+	this->sWidth = width;
+	this->sHeight = height;
+	this->fboInit();
+}
 
 void cFBO::Draw(cShader shader)
 {
 	glBindVertexArray(VAO);
+
+	glDisable(GL_DEPTH_TEST);
+	glClearColor(1.f, 1.f, 1.f, 1.f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	shader.Use();
+	shader.SetInteger("isSecondPass", true);
+
+	glActiveTexture(GL_TEXTURE0 + 15);
 	glBindTexture(GL_TEXTURE_2D, this->texColorBuffer);
+	shader.SetInteger("texFBOColor", 15, true);
+	//FBOShader->SetInteger("texFBOColor", 15, true);
+
+	glActiveTexture(GL_TEXTURE0 + 16);
+	glBindTexture(GL_TEXTURE_2D, this->texNormalBuffer);
+	shader.SetInteger("texFBONormal", 16, true);
+	//FBOShader->SetInteger("texFBONormal", 16, true);
+
+	glActiveTexture(GL_TEXTURE0 + 17);
+	glBindTexture(GL_TEXTURE_2D, this->texVertexBuffer);
+	shader.SetInteger("texFBOVertex", 17, true);
+	//FBOShader->SetInteger("texFBOVertex", 17, true);
+
+	shader.SetFloat("screenWidth", this->sWidth, true);
+	//FBOShader->SetFloat("screenWidth", width, true);
+	shader.SetFloat("screenHeight", this->sHeight, true);
+
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
