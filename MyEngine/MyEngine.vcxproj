@@ -93,7 +93,7 @@
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>assimp-vc140-mt.lib;glfw3_64.lib;gtestd.lib;lua5.3.3-static_64.lib;soil2-debug.lib;OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>assimp-vc140-mt.lib;glfw3_64.lib;gtestd.lib;lua5.3.3-static_64.lib;soil2-debug.lib;freetype.lib;OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -134,6 +134,7 @@
     <ClCompile Include="cModel.cpp" />
     <ClCompile Include="cShader.cpp" />
     <ClCompile Include="cSkybox.cpp" />
+    <ClCompile Include="cText.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="src\glad.c" />
   </ItemGroup>
@@ -147,6 +148,7 @@
     <ClInclude Include="cModel.h" />
     <ClInclude Include="cShader.h" />
     <ClInclude Include="cSkybox.h" />
+    <ClInclude Include="cText.h" />
     <ClInclude Include="eDepthType.h" />
   </ItemGroup>
   <ItemGroup>

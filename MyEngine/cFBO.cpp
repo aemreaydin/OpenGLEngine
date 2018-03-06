@@ -143,31 +143,7 @@ void cFBO::Draw(cShader shader)
 {
 	glBindVertexArray(VAO);
 
-	glDisable(GL_DEPTH_TEST);
-	glClearColor(1.f, 1.f, 1.f, 1.f);
-	glClear(GL_COLOR_BUFFER_BIT);
 
-	shader.Use();
-	shader.SetInteger("isSecondPass", true);
-
-	glActiveTexture(GL_TEXTURE0 + 15);
-	glBindTexture(GL_TEXTURE_2D, this->texColorBuffer);
-	shader.SetInteger("texFBOColor", 15, true);
-	//FBOShader->SetInteger("texFBOColor", 15, true);
-
-	glActiveTexture(GL_TEXTURE0 + 16);
-	glBindTexture(GL_TEXTURE_2D, this->texNormalBuffer);
-	shader.SetInteger("texFBONormal", 16, true);
-	//FBOShader->SetInteger("texFBONormal", 16, true);
-
-	glActiveTexture(GL_TEXTURE0 + 17);
-	glBindTexture(GL_TEXTURE_2D, this->texVertexBuffer);
-	shader.SetInteger("texFBOVertex", 17, true);
-	//FBOShader->SetInteger("texFBOVertex", 17, true);
-
-	shader.SetFloat("screenWidth", this->sWidth, true);
-	//FBOShader->SetFloat("screenWidth", width, true);
-	shader.SetFloat("screenHeight", this->sHeight, true);
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }

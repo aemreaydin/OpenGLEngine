@@ -9,7 +9,7 @@ in vec3 lightPosition;
 
 out vec3 Normal;
 out vec3 ObjectPosition;
-out vec3 TexCoords;
+out vec2 TexCoords;
 out vec3 LightPosition;
 
 uniform mat4 lightModel;
@@ -22,13 +22,7 @@ uniform bool isSkybox;
 
 void main()
 {
-	if(isSkybox)
-	{
-		TexCoords = skyboxPosition;    
-		vec4 pos = projection * view * vec4(skyboxPosition, 1.0f);
-    	gl_Position = pos.xyww;
-		return;
-	}
+
 
 	if(isSecondPass)
 	{

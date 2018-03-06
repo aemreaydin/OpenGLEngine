@@ -2,7 +2,6 @@
 #include "cShader.h"
 #include "cSkybox.h"
 
-cShader * Shader;
 
 cGameObject::cGameObject(std::string modelName, std::string modelDir, bool skybox, std::string folder)
 {
@@ -16,7 +15,7 @@ cGameObject::cGameObject(std::string modelName, std::string modelDir, bool skybo
 	this->isSkybox = skybox;
 	if (this->isSkybox)
 	{
-		this->Skybox = new cSkybox(folder, *Shader);
+		this->Skybox = new cSkybox(folder);
 		this->Skybox->LoadCubeMap();
 	}
 }
@@ -32,7 +31,7 @@ cGameObject::cGameObject(std::string modelName, std::string modelDir, glm::vec3 
 	this->isSkybox = skybox;
 	if (this->isSkybox)
 	{
-		this->Skybox = new cSkybox(folder, *Shader);
+		this->Skybox = new cSkybox(folder);
 		this->Skybox->LoadCubeMap();
 	}
 }

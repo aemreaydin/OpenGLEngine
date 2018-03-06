@@ -9,7 +9,7 @@
 #include "cLightManager.h"
 #include "eDepthType.h"
 #include "cFBO.h"
-
+#include "cText.h"
 
 #define _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
 #define _CRT_SECURE_NO_WARNINGS
@@ -25,10 +25,11 @@
 #include <glm/gtc/type_ptr.hpp>
 
 cGLCalls* GLCalls;
-extern cShader * Shader;
-cShader * LampShader, * StencilShader, * SkyboxShader, * FBOShader;
+cShader * Shader, * SkyboxShader, *TextShader;
+cShader * LampShader, * StencilShader, * FBOShader;
 cGameObject * Nanosuit, * SanFran;
 cLightManager * LightManager;
+cText * Text;
 
 std::vector<cFBO*> FBOs;
 
@@ -36,6 +37,10 @@ std::vector< cGameObject * > GOVec;
 std::vector< cGameObject * > GOSkybox;
 int currentSkybox = 0;
 cGameObject * FBOPlane;
+
+float currentFrame;
+double lastTime;
+std::string fpsString;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -46,9 +51,11 @@ void windowSizeCallback(GLFWwindow* window, int width, int height);
 void RenderScene();
 void RenderFboScene();
 void RenderSkybox();
+void RenderText();
 
 int width = 1600;
 int height = 900;
+int nbFrames = 0;
 
 Camera camera(glm::vec3(0.0f, 10.0f, 10.0f));
 float lastX = width / 2.0f;
@@ -62,6 +69,8 @@ float lastFrame = 0.0f;
 
 GL_DEPTH_TYPE depthType;
 int depthIndex = 0;
+
+int FBOMode = 0;
 
 TEST(TC_INIT, InitializeGLFW)
 {
@@ -101,6 +110,7 @@ int main(int argc, char **argv)
 	StencilShader = new cShader("assets/shaders/simpleVertex.glsl", "assets/shaders/stencilFragment.glsl");
 	SkyboxShader = new cShader("assets/shaders/skyboxVert.glsl", "assets/shaders/skyboxFrag.glsl");
 	FBOShader = new cShader("assets/shaders/fboVert.glsl", "assets/shaders/fboFrag.glsl");
+	TextShader = new cShader("assets/shaders/textVertex.glsl", "assets/shaders/textFrag.glsl");
 
 	FBOs.push_back(new cFBO(width, height));
 	FBOs.push_back(new cFBO(width, height));
@@ -108,6 +118,8 @@ int main(int argc, char **argv)
 	Nanosuit = new cGameObject("Nanosuit", "assets/models/nanosuit/nanosuit.obj", glm::vec3(7.0f, 0.0f, 0.0f), glm::vec3(0.2), glm::vec3(0.0f));	
 	SanFran = new cGameObject("Tree", "assets/models/sanfrancisco/houseSF.obj", glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(0.5f), glm::vec3(90.0f, 90.0f, 0.0f));
 	FBOPlane = new cGameObject("FBOPlane", "assets/models/FBOPlane/FboPlane.obj", glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f, 0.0f, 90.0f));
+	GOVec.push_back(Nanosuit);
+	GOVec.push_back(SanFran);
 	
 	GOSkybox.push_back(new cGameObject("SkyboxSea", "assets/models/skybox/cube.obj", true, "assets/skybox/ocean"));
 	GOSkybox.push_back(new cGameObject("SkyboxSpace", "assets/models/skybox/cube.obj", true, "assets/skybox/space"));
@@ -116,21 +128,34 @@ int main(int argc, char **argv)
 	LightManager->CreateLights();
 	LightManager->LoadLampsIntoShader(*LampShader);
 
-	//LightManager->LoadLampsIntoShader(*Shader);
-
-	GOVec.push_back(Nanosuit);
-	GOVec.push_back(SanFran);
+	Text = new cText("assets/fonts/04B_30__.TTF");
 
 
 
+	lastTime = glfwGetTime();
+	
 	while (!glfwWindowShouldClose(GLCalls->GetWindow()))
 	{
-		float currentFrame = glfwGetTime();
+		currentFrame = glfwGetTime();
+		Shader->SetFloat("time", currentFrame);
+		nbFrames++;
+		if (currentFrame - lastTime >= 1.0)
+		{
+			printf("%f ms/frame\n", 1000.0 / double(nbFrames));
+			float x = 1000.0 / double(nbFrames);
+			fpsString = std::to_string(x) + " ms/frame";
+			nbFrames = 0;
+			lastTime += 1.0;
+		}
+
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
+
 		processInput(GLCalls->GetWindow());
 		glfwGetFramebufferSize(GLCalls->GetWindow(), &width, &height);
+
+
 
 		FBOs[0]->BindFBO();
 		FBOs[0]->ClearBuffers();
@@ -139,11 +164,46 @@ int main(int argc, char **argv)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		Shader->SetInteger("isSecondPass", false);
-		RenderSkybox();
 		RenderScene();
+		RenderSkybox();
+		RenderText();
+
+
+
 
 		FBOs[0]->UnbindFBO();
+		glDisable(GL_DEPTH_TEST);
+		glClearColor(1.f, 1.f, 1.f, 1.f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		Shader->Use();
+		Shader->SetInteger("isSecondPass", true);
+
+		glActiveTexture(GL_TEXTURE0 + 15);
+		glBindTexture(GL_TEXTURE_2D, FBOs[0]->texColorBuffer);
+		Shader->SetInteger("texFBOColor", 15, true);
+		//FBOShader->SetInteger("texFBOColor", 15, true);
+
+		glActiveTexture(GL_TEXTURE0 + 16);
+		glBindTexture(GL_TEXTURE_2D, FBOs[0]->texNormalBuffer);
+		Shader->SetInteger("texFBONormal", 16, true);
+		//FBOShader->SetInteger("texFBONormal", 16, true);
+
+		glActiveTexture(GL_TEXTURE0 + 17);
+		glBindTexture(GL_TEXTURE_2D, FBOs[0]->texVertexBuffer);
+		Shader->SetInteger("texFBOVertex", 17, true);
+		//FBOShader->SetInteger("texFBOVertex", 17, true);
+
+		glActiveTexture(GL_TEXTURE0 + 18);
+		glBindTexture(GL_TEXTURE_2D, FBOs[0]->texDepthBuffer);
+		Shader->SetInteger("texFBODepth", 18);
+
+		Shader->SetFloat("screenWidth", width, true);
+		//FBOShader->SetFloat("screenWidth", width, true);
+		Shader->SetFloat("screenHeight", height, true);
+		Shader->SetInteger("FBOMode", FBOMode);
 		FBOs[0]->Draw(*Shader);
+
 
 
 		glfwPollEvents();
@@ -257,23 +317,30 @@ void RenderFboScene()
 	}
 	LightManager->DrawLightsIntoScene(*LampShader);
 }
-
 void RenderSkybox()
 {
 	glDepthFunc(GL_LEQUAL);	
 
-	Shader->Use();
-	Shader->SetInteger("skybox", 20);
-	Shader->SetInteger("isSkybox", true);
+	SkyboxShader->Use();
+	SkyboxShader->SetInteger("skybox", 20);
+	//Shader->SetInteger("isSkybox", true);
 	glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
 	glm::mat4 view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
-	Shader->SetMatrix4("projection", projection, true);
-	Shader->SetMatrix4("view", view, true);
+	SkyboxShader->SetMatrix4("projection", projection, true);
+	SkyboxShader->SetMatrix4("view", view, true);
 
-	GOSkybox[currentSkybox]->Draw(*Shader);	
+	GOSkybox[currentSkybox]->Draw(*SkyboxShader);
 
-	Shader->SetInteger("isSkybox", false);
+	//Shader->SetInteger("isSkybox", false);
 	glDepthFunc(GL_LESS);
+}
+void RenderText()
+{
+	TextShader->Use();
+	glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(width), 0.0f, static_cast<GLfloat>(height));
+	TextShader->SetMatrix4("projection", projection);
+	TextShader->SetInteger("text", 0);
+	Text->printText2D(*TextShader, fpsString, 25.f, 25.f, 1.f, glm::vec3(0.0f, 0.0f, 1.0f));
 }
 
 void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode)
@@ -284,6 +351,47 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode
 		std::cout << depthIndex << std::endl;
 		if (currentSkybox == GOSkybox.size())
 			currentSkybox = 0;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS)
+	{
+		FBOMode = 0;
+	}
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+	{
+		FBOMode = 1;
+	}
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+	{
+		FBOMode = 2;
+	}
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+	{
+		FBOMode = 3;
+	}
+	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+	{
+		FBOMode = 4;
+	}
+	if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
+	{
+		FBOMode = 5;
+	}
+	if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS)
+	{
+		FBOMode = 6;
+	}
+	if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS)
+	{
+		FBOMode = 7;
+	}
+	if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS)
+	{
+		FBOMode = 8;
+	}
+	if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS)
+	{
+		FBOMode = 9;
 	}
 }
 
