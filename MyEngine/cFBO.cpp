@@ -8,7 +8,6 @@ cFBO::cFBO(GLuint width, GLuint height)
 	this->sHeight = height;
 
 	float quadVertices[] = { 
-
 		-1.0f,  1.0f,  0.0f, 1.0f,
 		-1.0f, -1.0f,  0.0f, 0.0f,
 		1.0f, -1.0f,  1.0f, 0.0f,
@@ -133,7 +132,6 @@ void cFBO::Reset(GLuint width, GLuint height)
 
 	glDeleteFramebuffers(1, &(this->fbo));
 
-
 	this->sWidth = width;
 	this->sHeight = height;
 	this->fboInit();
@@ -142,8 +140,6 @@ void cFBO::Reset(GLuint width, GLuint height)
 void cFBO::Draw(cShader shader)
 {
 	glBindVertexArray(VAO);
-
-
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }

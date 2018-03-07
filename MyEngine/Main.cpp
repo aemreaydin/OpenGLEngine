@@ -87,6 +87,9 @@ int main(int argc, char **argv)
 	::testing::InitGoogleTest(&argc, argv);
 	RUN_ALL_TESTS();	
 
+	std::cout << glGetString(GL_RENDERER) << ", " << glGetString(GL_VERSION) << std::endl;
+	std::cout << "Shader language version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+
 	glfwSetFramebufferSizeCallback(GLCalls->GetWindow(), framebuffer_size_callback);
 	glfwSetCursorPosCallback(GLCalls->GetWindow(), mouse_callback);
 	glfwSetScrollCallback(GLCalls->GetWindow(), scroll_callback);
@@ -164,8 +167,8 @@ int main(int argc, char **argv)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		Shader->SetInteger("isSecondPass", false);
-		RenderScene();
 		RenderSkybox();
+		RenderScene();
 		RenderText();
 
 
@@ -194,9 +197,9 @@ int main(int argc, char **argv)
 		Shader->SetInteger("texFBOVertex", 17, true);
 		//FBOShader->SetInteger("texFBOVertex", 17, true);
 
-		glActiveTexture(GL_TEXTURE0 + 18);
-		glBindTexture(GL_TEXTURE_2D, FBOs[0]->texDepthBuffer);
-		Shader->SetInteger("texFBODepth", 18);
+		//glActiveTexture(GL_TEXTURE0 + 18);
+		//glBindTexture(GL_TEXTURE_2D, FBOs[0]->texDepthBuffer);
+		//Shader->SetInteger("texFBODepth", 18);
 
 		Shader->SetFloat("screenWidth", width, true);
 		//FBOShader->SetFloat("screenWidth", width, true);
@@ -223,9 +226,9 @@ void RenderScene()
 	Shader->SetMatrix4("view", view);
 	Shader->SetVector3f("eyePos", camera.GetPosition());
 
-	//LampShader->Use();
-	//LampShader->SetMatrix4("projection", projection, true);
-	//LampShader->SetMatrix4("view", view, true);
+	LampShader->Use();
+	LampShader->SetMatrix4("projection", projection, true);
+	LampShader->SetMatrix4("view", view, true);
 	LightManager->LoadLightsIntoShader(*Shader);
 
 	//StencilShader->Use();

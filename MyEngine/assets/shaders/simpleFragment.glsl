@@ -1,7 +1,7 @@
 #version 430
-out vec4 FragNormal;
-out vec4 FragColor;
-out vec3 FragVertex;
+layout(location=0) out vec4 FragColor;
+layout(location=1) out vec4 FragNormal;
+layout(location=2) out vec4 FragVertex;
 // From Vertex Shader
 in vec3 Normal;
 in vec3 ObjectPosition;
@@ -57,12 +57,17 @@ uniform bool isSecondPass;
 uniform bool isSkybox;
 
 
+uniform float blurOffsets[5] = float[]( 0.0, 1.0, 2.0, 3.0, 4.0 );
+uniform float blurWeights[5] = float[]( 0.2270270270, 0.1945945946, 0.1216216216,
+									   0.0540540541, 0.0162162162 );
+
+
 uniform int FBOMode;
 void main()
 {   
 	FragColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
 	FragNormal  = vec4(0.0f, 0.0f, 0.0f, 0.25f);
-	FragVertex  = vec3(0.0f, 0.0f, 0.0f);
+	FragVertex  = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	
 	vec4 textureColor = (texture(texture_diffuse1, TexCoords.xy));
 
@@ -78,7 +83,7 @@ void main()
 
 
 		vec3 norm = normalize(normalAtThisPixel.rgb);
-		vec3 viewDir = normalize(eyePos - vertexAtThisPixel.rgb);
+		vec3 viewDir = normalize(eyePos - ObjectPosition.rgb);
 		//viewDir = normalize(eyePos - ObjectPosition);
 
 		vec3 result = vec3(0.0, 0.0, 0.0);
@@ -109,17 +114,12 @@ void main()
 		}
 		else if(FBOMode == 6) // Blur --- TODO: Gaussian Blur
 		{
-			float blurH = 1.0 / 100;
-			float blurV = 1.0 / 100;
-			vec4 sum = vec4(0.0);
-			for(int x = -4; x <= 4; x++)
-			{
-				for(int y = -4; y <= 4; y++)
-				{
-					sum += texture(texFBOColor, vec2(textScreenCoords.x + x * blurH), textScreenCoords.y + y * blurV) / 81.0;
-				}
-			}
-			FragColor = vec4(sum.rgb, 1.0);
+			// FragColor = textire(texFBOColor, textScreenCoords) * blurWeights[0];
+			// for(int i = 1; i != 5; i++)
+			// {
+			// 	FragColor += texture(texFBOColor, vec2(textScreenCoords) + vec2(0.0, blurOffsets[i])) * blurWeights[i];
+			// }
+			// FragColor = vec4(sum.rgb, 1.0);
 		}
 		else if(FBOMode == 7) // Edge Detection
 		{
@@ -159,12 +159,12 @@ void main()
 		}
 		return;
 	}
-	float Depth = texture(texFBODepth, TexCoords.xy).x;
-	Depth = 1.0 - (1.0 - Depth) * 25.0;
+	//float Depth = texture(texFBODepth, TexCoords.xy).x;
+	//Depth = 1.0 - (1.0 - Depth) * 25.0;
 	FragColor = vec4(textureColor.rgb, 1.0);
 	//FragColor = vec4(Depth);
 	FragNormal = vec4(Normal, 1.0);
-	FragVertex = ObjectPosition;
+	FragVertex = vec4(ObjectPosition, 1.0);
 }
 
 
