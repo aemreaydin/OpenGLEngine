@@ -20,6 +20,16 @@ struct sVertex
 	glm::vec3 Tangent;
 	glm::vec3 BiTangent;
 };
+struct sSkinnedMeshVertex
+{
+	glm::vec3 Position;
+	glm::vec3 Normal;
+	glm::vec2 TexCoords;
+	glm::vec3 Tangent;
+	glm::vec3 BiTangent;
+	float BoneID[4];
+	float BoneWeights[4];
+};
 struct sTexture
 {
 	GLuint ID;
@@ -31,16 +41,19 @@ class cMesh
 {
 public:
 	cMesh(std::vector<sVertex> vertices, std::vector<GLuint> indices, std::vector<sTexture> textures);
+	cMesh(std::vector<sSkinnedMeshVertex> vertices, std::vector<GLuint> indices, std::vector<sTexture> textures);
 	~cMesh();
 
 	void Draw(cShader shader);
 
 	std::vector<sVertex> VecVertices;
+	std::vector<sSkinnedMeshVertex> VecSkinnedMeshVertices;
 	std::vector<GLuint> VecIndices;
 	std::vector<sTexture> VecTextures;
 private:
 	unsigned int VAO, VBO, EBO;
 	void setupMesh();
+	void setupSkinnedMesh();
 };
 
 

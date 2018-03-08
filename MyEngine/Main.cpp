@@ -10,6 +10,7 @@
 #include "eDepthType.h"
 #include "cFBO.h"
 #include "cText.h"
+#include "cSkinnedGameObject.h"
 
 #define _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
 #define _CRT_SECURE_NO_WARNINGS
@@ -30,6 +31,7 @@ cShader * LampShader, * StencilShader, * FBOShader;
 cGameObject * Nanosuit, * SanFran;
 cLightManager * LightManager;
 cText * Text;
+cSkinnedGameObject* ArmySoldier;
 
 std::vector<cFBO*> FBOs;
 
@@ -133,6 +135,7 @@ int main(int argc, char **argv)
 
 	Text = new cText("assets/fonts/04B_30__.TTF");
 
+	ArmySoldier = new cSkinnedGameObject("DarkKnight", "assets/RPG Character Animation Pack/Animations/Unarmed/RPG-Character@Unarmed-Idle.FBX", glm::vec3(15.0f, 0.0f, 0.0f), glm::vec3(0.01f), glm::vec3(0.0f, 0.0f, 0.0f));
 
 
 	lastTime = glfwGetTime();
@@ -170,6 +173,16 @@ int main(int argc, char **argv)
 		RenderSkybox();
 		RenderScene();
 		RenderText();
+
+
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, ArmySoldier->Position);
+		model = glm::rotate(model, glm::radians(ArmySoldier->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(ArmySoldier->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(ArmySoldier->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, ArmySoldier->Scale);
+		Shader->SetMatrix4("model", model, true);
+		ArmySoldier->Draw(*Shader);
 
 
 

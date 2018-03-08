@@ -369,10 +369,12 @@ CBData 24
 
 ColorBand 776
 
-	short flag 0 2
-	short tot 2 2
-	short cur 4 2
-	short ipotype 6 2
+	short tot 0 2
+	short cur 2 2
+	char ipotype 4 1
+	char ipotype_hue 5 1
+	char color_mode 6 1
+	char pad 7 1
 	CBData data 8 768
 
 EnvMap 200
@@ -649,7 +651,14 @@ GameSettings 16
 	int face_orientation 8 4
 	int pad1 12 4
 
-Material 912
+TexPaintSlot 24
+
+	Image *ima 0 8
+	char *uvname 8 8
+	int index 16 4
+	int pad 20 4
+
+Material 944
 
 	ID id 0 120
 	AnimData *adt 120 8
@@ -779,9 +788,15 @@ Material 912
 	int mapto_textured 880 4
 	short shadowonly_flag 884 2
 	short index 886 2
-	short vcol_alpha 888 2
-	short pad4 890 6
-	ListBase gpumaterial 896 16
+	float line_col 888 16
+	short line_priority 904 2
+	short vcol_alpha 906 2
+	short paint_active_slot 908 2
+	short paint_clone_slot 910 2
+	short tot_slots 912 2
+	short pad4 914 6
+	TexPaintSlot *texpaintslot 920 8
+	ListBase gpumaterial 928 16
 
 VFont 1168
 
@@ -1341,7 +1356,7 @@ EdgeSplitModifierData 120
 	float split_angle 112 4
 	int flags 116 4
 
-BevelModifierData 200
+BevelModifierData 208
 
 	ModifierData modifier 0 112
 	float value 112 4
@@ -1350,9 +1365,12 @@ BevelModifierData 200
 	short val_flags 122 2
 	short lim_flags 124 2
 	short e_flags 126 2
-	float profile 128 4
-	float bevel_angle 132 4
-	char defgrp_name 136 64
+	short mat 128 2
+	short pad 130 2
+	int pad2 132 4
+	float profile 136 4
+	float bevel_angle 140 4
+	char defgrp_name 144 64
 
 SmokeModifierData 144
 
@@ -2083,21 +2101,19 @@ ObHook 256
 	short active 250 2
 	float force 252 4
 
-DupliObject 160
+DupliObject 152
 
 	DupliObject *next 0 8
 	DupliObject *prev 8 8
 	Object *ob 16 8
-	int origlay 24 4
-	int pad 28 4
-	float mat 32 64
-	float orco 96 12
-	float uv 108 8
-	short type 116 2
-	char no_draw 118 1
-	char animated 119 1
-	int persistent_id 120 32
-	ParticleSystem *particle_system 152 8
+	float mat 24 64
+	float orco 88 12
+	float uv 100 8
+	short type 108 2
+	char no_draw 110 1
+	char animated 111 1
+	int persistent_id 112 32
+	ParticleSystem *particle_system 144 8
 
 PartDeflect 160
 
@@ -2571,7 +2587,7 @@ BakeData 1360
 	char pad 1293 3
 	char cage 1296 64
 
-RenderData 3976
+RenderData 3984
 
 	ImageFormatData im_format 0 248
 	AviCodecData *avicodecdata 248 8
@@ -2690,6 +2706,8 @@ RenderData 3976
 	float unit_line_thickness 2580 4
 	char engine 2584 32
 	BakeData bake 2616 1360
+	int preview_start_resolution 3976 4
+	int pad 3980 4
 
 RenderProfile 64
 
@@ -2787,25 +2805,31 @@ TimeMarker 96
 	int flag 84 4
 	Object *camera 88 8
 
-Paint 32
+Paint 40
 
 	Brush *brush 0 8
-	void *paint_cursor 8 8
-	char paint_cursor_col 16 4
-	int flags 20 4
-	int num_input_samples 24 4
-	int symmetry_flags 28 4
+	Palette *palette 8 8
+	void *paint_cursor 16 8
+	char paint_cursor_col 24 4
+	int flags 28 4
+	int num_input_samples 32 4
+	int symmetry_flags 36 4
 
-ImagePaintSettings 56
+ImagePaintSettings 104
 
-	Paint paint 0 32
-	short flag 32 2
-	short pad 34 2
-	short seam_bleed 36 2
-	short normal_angle 38 2
-	short screen_grab_size 40 4
-	int pad1 44 4
-	void *paintcursor 48 8
+	Paint paint 0 40
+	short flag 40 2
+	short missing_data 42 2
+	short seam_bleed 44 2
+	short normal_angle 46 2
+	short screen_grab_size 48 4
+	int mode 52 4
+	void *paintcursor 56 8
+	Image *stencil 64 8
+	Image *clone 72 8
+	Image *canvas 80 8
+	float stencil_col 88 12
+	float pad1 100 4
 
 ParticleBrushData 16
 
@@ -2833,31 +2857,31 @@ ParticleEditSettings 168
 	Scene *scene 152 8
 	Object *object 160 8
 
-Sculpt 80
+Sculpt 88
 
-	Paint paint 0 32
-	int flags 32 4
-	int radial_symm 36 12
-	float detail_size 48 4
-	int symmetrize_direction 52 4
-	float gravity_factor 56 4
-	float constant_detail 60 4
-	Object *gravity_object 64 8
-	void *pad2 72 8
+	Paint paint 0 40
+	int flags 40 4
+	int radial_symm 44 12
+	float detail_size 56 4
+	int symmetrize_direction 60 4
+	float gravity_factor 64 4
+	float constant_detail 68 4
+	Object *gravity_object 72 8
+	void *pad2 80 8
 
-UvSculpt 32
+UvSculpt 40
 
-	Paint paint 0 32
+	Paint paint 0 40
 
-VPaint 64
+VPaint 72
 
-	Paint paint 0 32
-	short flag 32 2
-	short pad 34 2
-	int tot 36 4
-	int *vpaint_prev 40 8
-	MDeformVert *wpaint_prev 48 8
-	void *paintcursor 56 8
+	Paint paint 0 40
+	short flag 40 2
+	short pad 42 2
+	int tot 44 4
+	int *vpaint_prev 48 8
+	MDeformVert *wpaint_prev 56 8
+	void *paintcursor 64 8
 
 TransformOrientation 120
 
@@ -2867,27 +2891,31 @@ TransformOrientation 120
 	float mat 80 36
 	int pad 116 4
 
-UnifiedPaintSettings 96
+UnifiedPaintSettings 128
 
 	int size 0 4
 	float unprojected_radius 4 4
 	float alpha 8 4
 	float weight 12 4
-	int flag 16 4
-	float last_rake 20 8
-	int pad 28 4
-	float brush_rotation 32 4
-	int draw_anchored 36 4
-	int anchored_size 40 4
-	float anchored_initial_mouse 44 8
-	int stroke_active 52 4
-	float size_pressure_value 56 4
-	float tex_mouse 60 8
-	float mask_tex_mouse 68 8
-	int do_linear_conversion 76 4
-	ColorSpace *colorspace 80 8
-	float pixel_radius 88 4
-	int pad2 92 4
+	float rgb 16 12
+	float secondary_rgb 28 12
+	int flag 40 4
+	float last_rake 44 8
+	float brush_rotation 52 4
+	int draw_anchored 56 4
+	int anchored_size 60 4
+	char draw_inverted 64 1
+	char pad3 65 7
+	float overlap_factor 72 4
+	float anchored_initial_mouse 76 8
+	int stroke_active 84 4
+	float size_pressure_value 88 4
+	float tex_mouse 92 8
+	float mask_tex_mouse 100 8
+	int do_linear_conversion 108 4
+	ColorSpace *colorspace 112 8
+	float pixel_radius 120 4
+	int pad4 124 4
 
 MeshStatVis 40
 
@@ -2905,7 +2933,7 @@ MeshStatVis 40
 	float sharp_min 32 4
 	float sharp_max 36 4
 
-ToolSettings 568
+ToolSettings 648
 
 	VPaint *vpaint 0 8
 	VPaint *wpaint 8 8
@@ -2924,64 +2952,64 @@ ToolSettings 568
 	short autoik_chainlen 56 2
 	char gpencil_flags 58 1
 	char pad 59 5
-	ImagePaintSettings imapaint 64 56
-	ParticleEditSettings particle 120 168
-	float proportional_size 288 4
-	float select_thresh 292 4
-	short autokey_mode 296 2
-	short autokey_flag 298 2
-	char multires_subdiv_type 300 1
-	char pad3 301 1
-	short skgen_resolution 302 2
-	float skgen_threshold_internal 304 4
-	float skgen_threshold_external 308 4
-	float skgen_length_ratio 312 4
-	float skgen_length_limit 316 4
-	float skgen_angle_limit 320 4
-	float skgen_correlation_limit 324 4
-	float skgen_symmetry_limit 328 4
-	float skgen_retarget_angle_weight 332 4
-	float skgen_retarget_length_weight 336 4
-	float skgen_retarget_distance_weight 340 4
-	short skgen_options 344 2
-	char skgen_postpro 346 1
-	char skgen_postpro_passes 347 1
-	char skgen_subdivisions 348 3
-	char skgen_multi_level 351 1
-	Object *skgen_template 352 8
-	char bone_sketching 360 1
-	char bone_sketching_convert 361 1
-	char skgen_subdivision_number 362 1
-	char skgen_retarget_options 363 1
-	char skgen_retarget_roll 364 1
-	char skgen_side_string 365 8
-	char skgen_num_string 373 8
-	char edge_mode 381 1
-	char edge_mode_live_unwrap 382 1
-	char snap_mode 383 1
-	char snap_node_mode 384 1
-	char snap_uv_mode 385 1
-	short snap_flag 386 2
-	short snap_target 388 2
-	short proportional 390 2
-	short prop_mode 392 2
-	char proportional_objects 394 1
-	char proportional_mask 395 1
-	char auto_normalize 396 1
-	char multipaint 397 1
-	char weightuser 398 1
-	char vgroupsubset 399 1
-	int use_uv_sculpt 400 4
-	int uv_sculpt_settings 404 4
-	int uv_sculpt_tool 408 4
-	int uv_relax_method 412 4
-	short sculpt_paint_settings 416 2
-	short pad5 418 2
-	int sculpt_paint_unified_size 420 4
-	float sculpt_paint_unified_unprojected_radius 424 4
-	float sculpt_paint_unified_alpha 428 4
-	UnifiedPaintSettings unified_paint_settings 432 96
-	MeshStatVis statvis 528 40
+	ImagePaintSettings imapaint 64 104
+	ParticleEditSettings particle 168 168
+	float proportional_size 336 4
+	float select_thresh 340 4
+	short autokey_mode 344 2
+	short autokey_flag 346 2
+	char multires_subdiv_type 348 1
+	char pad3 349 1
+	short skgen_resolution 350 2
+	float skgen_threshold_internal 352 4
+	float skgen_threshold_external 356 4
+	float skgen_length_ratio 360 4
+	float skgen_length_limit 364 4
+	float skgen_angle_limit 368 4
+	float skgen_correlation_limit 372 4
+	float skgen_symmetry_limit 376 4
+	float skgen_retarget_angle_weight 380 4
+	float skgen_retarget_length_weight 384 4
+	float skgen_retarget_distance_weight 388 4
+	short skgen_options 392 2
+	char skgen_postpro 394 1
+	char skgen_postpro_passes 395 1
+	char skgen_subdivisions 396 3
+	char skgen_multi_level 399 1
+	Object *skgen_template 400 8
+	char bone_sketching 408 1
+	char bone_sketching_convert 409 1
+	char skgen_subdivision_number 410 1
+	char skgen_retarget_options 411 1
+	char skgen_retarget_roll 412 1
+	char skgen_side_string 413 8
+	char skgen_num_string 421 8
+	char edge_mode 429 1
+	char edge_mode_live_unwrap 430 1
+	char snap_mode 431 1
+	char snap_node_mode 432 1
+	char snap_uv_mode 433 1
+	short snap_flag 434 2
+	short snap_target 436 2
+	short proportional 438 2
+	short prop_mode 440 2
+	char proportional_objects 442 1
+	char proportional_mask 443 1
+	char auto_normalize 444 1
+	char multipaint 445 1
+	char weightuser 446 1
+	char vgroupsubset 447 1
+	int use_uv_sculpt 448 4
+	int uv_sculpt_settings 452 4
+	int uv_sculpt_tool 456 4
+	int uv_relax_method 460 4
+	short sculpt_paint_settings 464 2
+	short pad5 466 2
+	int sculpt_paint_unified_size 468 4
+	float sculpt_paint_unified_unprojected_radius 472 4
+	float sculpt_paint_unified_alpha 476 4
+	UnifiedPaintSettings unified_paint_settings 480 128
+	MeshStatVis statvis 608 40
 
 bStats 32
 
@@ -3008,7 +3036,7 @@ PhysicsSettings 24
 	int quick_cache_step 16 4
 	int rt 20 4
 
-Scene 4952
+Scene 4960
 
 	ID id 0 120
 	AnimData *adt 120 8
@@ -3032,32 +3060,32 @@ Scene 4952
 	Editing *ed 256 8
 	ToolSettings *toolsettings 264 8
 	SceneStats *stats 272 8
-	RenderData r 280 3976
-	AudioData audio 4256 32
-	ListBase markers 4288 16
-	ListBase transform_spaces 4304 16
-	void *sound_scene 4320 8
-	void *sound_scene_handle 4328 8
-	void *sound_scrub_handle 4336 8
-	void *speaker_handles 4344 8
-	void *fps_info 4352 8
-	DagForest *theDag 4360 8
-	short dagflags 4368 2
-	short recalc 4370 2
-	int active_keyingset 4372 4
-	ListBase keyingsets 4376 16
-	GameFraming framing 4392 16
-	GameData gm 4408 184
-	UnitSettings unit 4592 8
-	bGPdata *gpd 4600 8
-	PhysicsSettings physics_settings 4608 24
-	MovieClip *clip 4632 8
-	uint64_t customdata_mask 4640 8
-	uint64_t customdata_mask_modal 4648 8
-	ColorManagedViewSettings view_settings 4656 160
-	ColorManagedDisplaySettings display_settings 4816 64
-	ColorManagedColorspaceSettings sequencer_colorspace_settings 4880 64
-	RigidBodyWorld *rigidbody_world 4944 8
+	RenderData r 280 3984
+	AudioData audio 4264 32
+	ListBase markers 4296 16
+	ListBase transform_spaces 4312 16
+	void *sound_scene 4328 8
+	void *sound_scene_handle 4336 8
+	void *sound_scrub_handle 4344 8
+	void *speaker_handles 4352 8
+	void *fps_info 4360 8
+	DagForest *theDag 4368 8
+	short dagflags 4376 2
+	short recalc 4378 2
+	int active_keyingset 4380 4
+	ListBase keyingsets 4384 16
+	GameFraming framing 4400 16
+	GameData gm 4416 184
+	UnitSettings unit 4600 8
+	bGPdata *gpd 4608 8
+	PhysicsSettings physics_settings 4616 24
+	MovieClip *clip 4640 8
+	uint64_t customdata_mask 4648 8
+	uint64_t customdata_mask_modal 4656 8
+	ColorManagedViewSettings view_settings 4664 160
+	ColorManagedDisplaySettings display_settings 4824 64
+	ColorManagedColorspaceSettings sequencer_colorspace_settings 4888 64
+	RigidBodyWorld *rigidbody_world 4952 8
 
 BGpic 104
 
@@ -3688,7 +3716,7 @@ uiGradientColors 16
 	int show_grad 8 4
 	int pad2 12 4
 
-ThemeUI 872
+ThemeUI 904
 
 	uiWidgetColors wcol_regular 0 32
 	uiWidgetColors wcol_tool 32 32
@@ -3707,18 +3735,19 @@ ThemeUI 872
 	uiWidgetColors wcol_scroll 448 32
 	uiWidgetColors wcol_progress 480 32
 	uiWidgetColors wcol_list_item 512 32
-	uiWidgetStateColors wcol_state 544 32
-	uiPanelColors panel 576 16
-	float menu_shadow_fac 592 4
-	short menu_shadow_width 596 2
-	short pad 598 2
-	char iconfile 600 256
-	float icon_alpha 856 4
-	char xaxis 860 4
-	char yaxis 864 4
-	char zaxis 868 4
+	uiWidgetColors wcol_pie_menu 544 32
+	uiWidgetStateColors wcol_state 576 32
+	uiPanelColors panel 608 16
+	float menu_shadow_fac 624 4
+	short menu_shadow_width 628 2
+	short pad 630 2
+	char iconfile 632 256
+	float icon_alpha 888 4
+	char xaxis 892 4
+	char yaxis 896 4
+	char zaxis 900 4
 
-ThemeSpace 712
+ThemeSpace 720
 
 	char back 0 4
 	char title 4 4
@@ -3776,49 +3805,49 @@ ThemeSpace 712
 	char extra_face_area 236 4
 	char normal 240 4
 	char vertex_normal 244 4
-	char bone_solid 248 4
-	char bone_pose 252 4
-	char bone_pose_active 256 4
-	char strip 260 4
-	char strip_select 264 4
-	char cframe 268 4
-	char freestyle_edge_mark 272 4
-	char freestyle_face_mark 276 4
-	char nurb_uline 280 4
-	char nurb_vline 284 4
-	char act_spline 288 4
-	char nurb_sel_uline 292 4
-	char nurb_sel_vline 296 4
-	char lastsel_point 300 4
-	char handle_free 304 4
-	char handle_auto 308 4
-	char handle_vect 312 4
-	char handle_align 316 4
-	char handle_auto_clamped 320 4
-	char handle_sel_free 324 4
-	char handle_sel_auto 328 4
-	char handle_sel_vect 332 4
-	char handle_sel_align 336 4
-	char handle_sel_auto_clamped 340 4
-	char ds_channel 344 4
-	char ds_subchannel 348 4
-	char keytype_keyframe 352 4
-	char keytype_extreme 356 4
-	char keytype_breakdown 360 4
-	char keytype_jitter 364 4
-	char keytype_keyframe_select 368 4
-	char keytype_extreme_select 372 4
-	char keytype_breakdown_select 376 4
-	char keytype_jitter_select 380 4
-	char keyborder 384 4
-	char keyborder_select 388 4
-	char console_output 392 4
-	char console_input 396 4
-	char console_info 400 4
-	char console_error 404 4
-	char console_cursor 408 4
-	char console_select 412 4
-	char pad1 416 4
+	char loop_normal 248 4
+	char bone_solid 252 4
+	char bone_pose 256 4
+	char bone_pose_active 260 4
+	char strip 264 4
+	char strip_select 268 4
+	char cframe 272 4
+	char freestyle_edge_mark 276 4
+	char freestyle_face_mark 280 4
+	char nurb_uline 284 4
+	char nurb_vline 288 4
+	char act_spline 292 4
+	char nurb_sel_uline 296 4
+	char nurb_sel_vline 300 4
+	char lastsel_point 304 4
+	char handle_free 308 4
+	char handle_auto 312 4
+	char handle_vect 316 4
+	char handle_align 320 4
+	char handle_auto_clamped 324 4
+	char handle_sel_free 328 4
+	char handle_sel_auto 332 4
+	char handle_sel_vect 336 4
+	char handle_sel_align 340 4
+	char handle_sel_auto_clamped 344 4
+	char ds_channel 348 4
+	char ds_subchannel 352 4
+	char keytype_keyframe 356 4
+	char keytype_extreme 360 4
+	char keytype_breakdown 364 4
+	char keytype_jitter 368 4
+	char keytype_keyframe_select 372 4
+	char keytype_extreme_select 376 4
+	char keytype_breakdown_select 380 4
+	char keytype_jitter_select 384 4
+	char keyborder 388 4
+	char keyborder_select 392 4
+	char console_output 396 4
+	char console_input 400 4
+	char console_info 404 4
+	char console_error 408 4
+	char console_cursor 412 4
+	char console_select 416 4
 	char vertex_size 420 1
 	char outline_width 421 1
 	char facedot_size 422 1
@@ -3896,6 +3925,8 @@ ThemeSpace 712
 	char info_info_text 700 4
 	char info_debug 704 4
 	char info_debug_text 708 4
+	char paint_curve_pivot 712 4
+	char paint_curve_handle 716 4
 
 ThemeWireColor 16
 
@@ -3905,32 +3936,32 @@ ThemeWireColor 16
 	short flag 12 2
 	short pad 14 2
 
-bTheme 13352
+bTheme 13520
 
 	bTheme *next 0 8
 	bTheme *prev 8 8
 	char name 16 32
-	ThemeUI tui 48 872
-	ThemeSpace tbuts 920 712
-	ThemeSpace tv3d 1632 712
-	ThemeSpace tfile 2344 712
-	ThemeSpace tipo 3056 712
-	ThemeSpace tinfo 3768 712
-	ThemeSpace tact 4480 712
-	ThemeSpace tnla 5192 712
-	ThemeSpace tseq 5904 712
-	ThemeSpace tima 6616 712
-	ThemeSpace text 7328 712
-	ThemeSpace toops 8040 712
-	ThemeSpace ttime 8752 712
-	ThemeSpace tnode 9464 712
-	ThemeSpace tlogic 10176 712
-	ThemeSpace tuserpref 10888 712
-	ThemeSpace tconsole 11600 712
-	ThemeSpace tclip 12312 712
-	ThemeWireColor tarm 13024 320
-	int active_theme_area 13344 4
-	int pad 13348 4
+	ThemeUI tui 48 904
+	ThemeSpace tbuts 952 720
+	ThemeSpace tv3d 1672 720
+	ThemeSpace tfile 2392 720
+	ThemeSpace tipo 3112 720
+	ThemeSpace tinfo 3832 720
+	ThemeSpace tact 4552 720
+	ThemeSpace tnla 5272 720
+	ThemeSpace tseq 5992 720
+	ThemeSpace tima 6712 720
+	ThemeSpace text 7432 720
+	ThemeSpace toops 8152 720
+	ThemeSpace ttime 8872 720
+	ThemeSpace tnode 9592 720
+	ThemeSpace tlogic 10312 720
+	ThemeSpace tuserpref 11032 720
+	ThemeSpace tconsole 11752 720
+	ThemeSpace tclip 12472 720
+	ThemeWireColor tarm 13192 320
+	int active_theme_area 13512 4
+	int pad 13516 4
 
 bAddon 88
 
@@ -3966,7 +3997,7 @@ WalkNavigation 32
 	short flag 24 2
 	short pad 26 6
 
-UserDef 9152
+UserDef 10960
 
 	int versionfile 0 4
 	int subversionfile 4 4
@@ -3976,103 +4007,112 @@ UserDef 9152
 	char tempdir 20 768
 	char fontdir 788 768
 	char renderdir 1556 1024
-	char textudir 2580 768
-	char pythondir 3348 768
-	char sounddir 4116 768
-	char i18ndir 4884 768
-	char image_editor 5652 1024
-	char anim_player 6676 1024
-	int anim_player_preset 7700 4
-	short v2d_min_gridsize 7704 2
-	short timecode_style 7706 2
-	short versions 7708 2
-	short dbl_click_time 7710 2
-	short gameflags 7712 2
-	short wheellinescroll 7714 2
-	int uiflag 7716 4
-	int uiflag2 7720 4
-	int language 7724 4
-	short userpref 7728 2
-	short viewzoom 7730 2
-	int mixbufsize 7732 4
-	int audiodevice 7736 4
-	int audiorate 7740 4
-	int audioformat 7744 4
-	int audiochannels 7748 4
-	int scrollback 7752 4
-	int dpi 7756 4
-	short encoding 7760 2
-	short transopts 7762 2
-	short menuthreshold1 7764 2
-	short menuthreshold2 7766 2
-	ListBase themes 7768 16
-	ListBase uifonts 7784 16
-	ListBase uistyles 7800 16
-	ListBase keymaps 7816 16
-	ListBase user_keymaps 7832 16
-	ListBase addons 7848 16
-	ListBase autoexec_paths 7864 16
-	char keyconfigstr 7880 64
-	short undosteps 7944 2
-	short undomemory 7946 2
-	short gp_manhattendist 7948 2
-	short gp_euclideandist 7950 2
-	short gp_eraser 7952 2
-	short gp_settings 7954 2
-	short tb_leftmouse 7956 2
-	short tb_rightmouse 7958 2
-	SolidLight light 7960 168
-	short tw_hotspot 8128 2
-	short tw_flag 8130 2
-	short tw_handlesize 8132 2
-	short tw_size 8134 2
-	short textimeout 8136 2
-	short texcollectrate 8138 2
-	short wmdrawmethod 8140 2
-	short dragthreshold 8142 2
-	int memcachelimit 8144 4
-	int prefetchframes 8148 4
-	short frameserverport 8152 2
-	short pad_rot_angle 8154 2
-	short obcenter_dia 8156 2
-	short rvisize 8158 2
-	short rvibright 8160 2
-	short recent_files 8162 2
-	short smooth_viewtx 8164 2
-	short glreslimit 8166 2
-	short curssize 8168 2
-	short color_picker_type 8170 2
-	char ipo_new 8172 1
-	char keyhandles_new 8173 1
-	char pad1 8174 2
-	short scrcastfps 8176 2
-	short scrcastwait 8178 2
-	short widget_unit 8180 2
-	short anisotropic_filter 8182 2
-	short use_16bit_textures 8184 2
-	short use_gpu_mipmap 8186 2
-	float ndof_sensitivity 8188 4
-	float ndof_orbit_sensitivity 8192 4
-	int ndof_flag 8196 4
-	short ogl_multisamples 8200 2
-	short image_draw_method 8202 2
-	float glalphaclip 8204 4
-	short autokey_mode 8208 2
-	short autokey_flag 8210 2
-	short text_render 8212 2
-	short pad9 8214 2
-	ColorBand coba_weight 8216 776
-	float sculpt_paint_overlay_col 8992 12
-	float gpencil_new_layer_col 9004 16
-	short tweak_threshold 9020 2
-	char navigation_mode 9022 1
-	char pad 9023 1
-	char author 9024 80
-	int compute_device_type 9104 4
-	int compute_device_id 9108 4
-	float fcu_inactive_alpha 9112 4
-	float pixelsize 9116 4
-	WalkNavigation walk_navigation 9120 32
+	char render_cachedir 2580 768
+	char textudir 3348 768
+	char pythondir 4116 768
+	char sounddir 4884 768
+	char i18ndir 5652 768
+	char image_editor 6420 1024
+	char anim_player 7444 1024
+	int anim_player_preset 8468 4
+	short v2d_min_gridsize 8472 2
+	short timecode_style 8474 2
+	short versions 8476 2
+	short dbl_click_time 8478 2
+	short gameflags 8480 2
+	short wheellinescroll 8482 2
+	int uiflag 8484 4
+	int uiflag2 8488 4
+	int language 8492 4
+	short userpref 8496 2
+	short viewzoom 8498 2
+	int mixbufsize 8500 4
+	int audiodevice 8504 4
+	int audiorate 8508 4
+	int audioformat 8512 4
+	int audiochannels 8516 4
+	int scrollback 8520 4
+	int dpi 8524 4
+	short encoding 8528 2
+	short transopts 8530 2
+	short menuthreshold1 8532 2
+	short menuthreshold2 8534 2
+	ListBase themes 8536 16
+	ListBase uifonts 8552 16
+	ListBase uistyles 8568 16
+	ListBase keymaps 8584 16
+	ListBase user_keymaps 8600 16
+	ListBase addons 8616 16
+	ListBase autoexec_paths 8632 16
+	char keyconfigstr 8648 64
+	short undosteps 8712 2
+	short undomemory 8714 2
+	short gp_manhattendist 8716 2
+	short gp_euclideandist 8718 2
+	short gp_eraser 8720 2
+	short gp_settings 8722 2
+	short tb_leftmouse 8724 2
+	short tb_rightmouse 8726 2
+	SolidLight light 8728 168
+	short tw_hotspot 8896 2
+	short tw_flag 8898 2
+	short tw_handlesize 8900 2
+	short tw_size 8902 2
+	short textimeout 8904 2
+	short texcollectrate 8906 2
+	short wmdrawmethod 8908 2
+	short dragthreshold 8910 2
+	int memcachelimit 8912 4
+	int prefetchframes 8916 4
+	short frameserverport 8920 2
+	short pad_rot_angle 8922 2
+	short obcenter_dia 8924 2
+	short rvisize 8926 2
+	short rvibright 8928 2
+	short recent_files 8930 2
+	short smooth_viewtx 8932 2
+	short glreslimit 8934 2
+	short curssize 8936 2
+	short color_picker_type 8938 2
+	char ipo_new 8940 1
+	char keyhandles_new 8941 1
+	char gpu_select_method 8942 1
+	char pad1 8943 1
+	short scrcastfps 8944 2
+	short scrcastwait 8946 2
+	short widget_unit 8948 2
+	short anisotropic_filter 8950 2
+	short use_16bit_textures 8952 2
+	short use_gpu_mipmap 8954 2
+	float ndof_sensitivity 8956 4
+	float ndof_orbit_sensitivity 8960 4
+	int ndof_flag 8964 4
+	short ogl_multisamples 8968 2
+	short image_draw_method 8970 2
+	float glalphaclip 8972 4
+	short autokey_mode 8976 2
+	short autokey_flag 8978 2
+	short text_render 8980 2
+	short pad9 8982 2
+	ColorBand coba_weight 8984 776
+	float sculpt_paint_overlay_col 9760 12
+	float gpencil_new_layer_col 9772 16
+	short tweak_threshold 9788 2
+	char navigation_mode 9790 1
+	char pad 9791 1
+	char author 9792 80
+	char font_path_ui 9872 1024
+	int compute_device_type 10896 4
+	int compute_device_id 10900 4
+	float fcu_inactive_alpha 10904 4
+	float pixelsize 10908 4
+	short pie_interaction_type 10912 2
+	short pie_initial_timeout 10914 2
+	int pie_animation_timeout 10916 4
+	int pad2 10920 4
+	short pie_menu_radius 10924 2
+	short pie_menu_threshold 10926 2
+	WalkNavigation walk_navigation 10928 32
 
 bScreen 248
 
@@ -4418,6 +4458,11 @@ SpeedControlVars 24
 	int length 16 4
 	int lastValidFrame 20 4
 
+GaussianBlurVars 8
+
+	float size_x 0 4
+	float size_y 4 4
+
 SequenceModifierData 112
 
 	SequenceModifierData *next 0 8
@@ -4584,12 +4629,14 @@ bNearSensor 80
 	int lastval 72 4
 	int pad 76 4
 
-bMouseSensor 8
+bMouseSensor 136
 
 	short type 0 2
 	short flag 2 2
 	short pad1 4 2
-	short pad2 6 2
+	short mode 6 2
+	char propname 8 64
+	char matname 72 64
 
 bTouchSensor 80
 
@@ -4792,7 +4839,7 @@ bSoundActuator 72
 	short pad5 68 2
 	short pad6 70 2
 
-bEditObjectActuator 120
+bEditObjectActuator 128
 
 	int time 0 4
 	short type 4 2
@@ -4805,6 +4852,9 @@ bEditObjectActuator 120
 	float mass 112 4
 	short localflag 116 2
 	short dyn_operation 118 2
+	short upflag 120 2
+	short trackflag 122 2
+	int pad 124 4
 
 bSceneActuator 24
 
@@ -4967,6 +5017,16 @@ bSteeringActuator 48
 	int updateTime 28 4
 	Object *target 32 8
 	Object *navmesh 40 8
+
+bMouseActuator 44
+
+	short type 0 2
+	short flag 2 2
+	int object_axis 4 8
+	float threshold 12 8
+	float sensitivity 20 8
+	float limit_x 28 8
+	float limit_y 36 8
 
 bActuator 112
 
@@ -6197,6 +6257,11 @@ NodeShaderUVMap 64
 
 	char uv_map 0 64
 
+NodeSunBeams 12
+
+	float source 0 8
+	float ray_length 8 4
+
 CurveMapPoint 12
 
 	float x 0 4
@@ -6296,7 +6361,7 @@ BrushClone 24
 	float alpha 16 4
 	float pad 20 4
 
-Brush 1992
+Brush 2056
 
 	ID id 0 120
 	BrushClone clone 120 24
@@ -6306,43 +6371,82 @@ Brush 1992
 	Brush *toggle_brush 776 8
 	ImBuf *icon_imbuf 784 8
 	PreviewImage *preview 792 8
-	char icon_filepath 800 1024
-	float normal_weight 1824 4
-	short blend 1828 2
-	short ob_mode 1830 2
-	float weight 1832 4
-	int size 1836 4
-	int flag 1840 4
-	float jitter 1844 4
-	int jitter_absolute 1848 4
-	int overlay_flags 1852 4
-	int spacing 1856 4
-	int smooth_stroke_radius 1860 4
-	float smooth_stroke_factor 1864 4
-	float rate 1868 4
-	float rgb 1872 12
-	float alpha 1884 4
-	int sculpt_plane 1888 4
-	float plane_offset 1892 4
-	char sculpt_tool 1896 1
-	char vertexpaint_tool 1897 1
-	char imagepaint_tool 1898 1
-	char mask_tool 1899 1
-	float autosmooth_factor 1900 4
-	float crease_pinch_factor 1904 4
-	float plane_trim 1908 4
-	float height 1912 4
-	float texture_sample_bias 1916 4
-	int texture_overlay_alpha 1920 4
-	int mask_overlay_alpha 1924 4
-	int cursor_overlay_alpha 1928 4
-	float unprojected_radius 1932 4
-	float add_col 1936 12
-	float sub_col 1948 12
-	float stencil_pos 1960 8
-	float stencil_dimension 1968 8
-	float mask_stencil_pos 1976 8
-	float mask_stencil_dimension 1984 8
+	ColorBand *gradient 800 8
+	PaintCurve *paint_curve 808 8
+	char icon_filepath 816 1024
+	float normal_weight 1840 4
+	short blend 1844 2
+	short ob_mode 1846 2
+	float weight 1848 4
+	int size 1852 4
+	int flag 1856 4
+	int mask_pressure 1860 4
+	float jitter 1864 4
+	int jitter_absolute 1868 4
+	int overlay_flags 1872 4
+	int spacing 1876 4
+	int smooth_stroke_radius 1880 4
+	float smooth_stroke_factor 1884 4
+	float rate 1888 4
+	float rgb 1892 12
+	float alpha 1904 4
+	float secondary_rgb 1908 12
+	int sculpt_plane 1920 4
+	float plane_offset 1924 4
+	float pad 1928 4
+	int gradient_spacing 1932 4
+	int gradient_stroke_mode 1936 4
+	int gradient_fill_mode 1940 4
+	char sculpt_tool 1944 1
+	char vertexpaint_tool 1945 1
+	char imagepaint_tool 1946 1
+	char mask_tool 1947 1
+	float autosmooth_factor 1948 4
+	float crease_pinch_factor 1952 4
+	float plane_trim 1956 4
+	float height 1960 4
+	float texture_sample_bias 1964 4
+	int texture_overlay_alpha 1968 4
+	int mask_overlay_alpha 1972 4
+	int cursor_overlay_alpha 1976 4
+	float unprojected_radius 1980 4
+	float sharp_threshold 1984 4
+	int blur_kernel_radius 1988 4
+	int blur_mode 1992 4
+	float fill_threshold 1996 4
+	float add_col 2000 12
+	float sub_col 2012 12
+	float stencil_pos 2024 8
+	float stencil_dimension 2032 8
+	float mask_stencil_pos 2040 8
+	float mask_stencil_dimension 2048 8
+
+PaletteColor 32
+
+	PaletteColor *next 0 8
+	PaletteColor *prev 8 8
+	float rgb 16 12
+	float value 28 4
+
+Palette 160
+
+	ID id 0 120
+	ListBase colors 120 16
+	ListBase deleted 136 16
+	int active_color 152 4
+	int pad 156 4
+
+PaintCurvePoint 76
+
+	BezTriple bez 0 72
+	float pressure 72 4
+
+PaintCurve 136
+
+	ID id 0 120
+	PaintCurvePoint *points 120 8
+	int tot_points 128 4
+	int add_index 132 4
 
 CustomDataLayer 104
 
