@@ -11,8 +11,10 @@ out vec3 Normal;
 out vec3 ObjectPosition;
 out vec2 TexCoords;
 out vec3 LightPosition;
+out vec4 LightPOV;
 
 uniform mat4 lightModel;
+uniform mat4 lightSpaceMatrix;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
@@ -22,21 +24,11 @@ uniform bool isSkybox;
 
 void main()
 {
-
-
-	if(isSecondPass)
-	{
-    	TexCoords.xy = aTexCoords;
-    	gl_Position = vec4(aPos.xy, 0.0f, 1.0f);
-		return;
-	}
-	else
-	{
-		TexCoords.xy = aTexCoords;    
-		Normal = mat3(transpose(inverse(model))) * aNormal;
-		LightPosition = vec3(lightModel * vec4(lightPosition, 1.0));
-		ObjectPosition = vec3(model * vec4(aPos, 1.0));
-		gl_Position = projection * view * model * vec4(aPos, 1.0);
-		return;
-	}
+	TexCoords.xy = aTexCoords;    
+	Normal = mat3(transpose(inverse(model))) * aNormal;
+	LightPosition = vec3(lightModel * vec4(lightPosition, 1.0));
+	ObjectPosition = vec3(model * vec4(aPos, 1.0));
+	LightPOV = lightSpaceMatrix * vec4(ObjectPosition, 1.0);
+	gl_Position = projection * view * model * vec4(aPos, 1.0);
+	return;
 }

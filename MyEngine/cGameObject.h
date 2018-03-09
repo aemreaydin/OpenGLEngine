@@ -27,5 +27,8 @@ public:
 
 	bool isSkybox;
 	cSkybox* Skybox;
+
+	bool isReflectRefract;
+	float RefractCoeff;
 };
 #endif // !_GAME_OBJECT_

@@ -18,6 +18,9 @@ cGameObject::cGameObject(std::string modelName, std::string modelDir, bool skybo
 		this->Skybox = new cSkybox(folder);
 		this->Skybox->LoadCubeMap();
 	}
+
+	this->isReflectRefract = false;
+	this->RefractCoeff = 0.0f;
 }
 cGameObject::cGameObject(std::string modelName, std::string modelDir, glm::vec3 position, glm::vec3 scale, glm::vec3 orientationEuler, bool skybox, std::string folder)
 {
@@ -34,6 +37,9 @@ cGameObject::cGameObject(std::string modelName, std::string modelDir, glm::vec3 
 		this->Skybox = new cSkybox(folder);
 		this->Skybox->LoadCubeMap();
 	}
+
+	this->isReflectRefract = false;
+	this->RefractCoeff = 0.0f;
 }
 void cGameObject::Draw(cShader Shader)
 {

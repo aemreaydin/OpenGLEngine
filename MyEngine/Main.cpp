@@ -26,7 +26,7 @@
 
 cGLCalls* GLCalls;
 cShader * Shader, * SkyboxShader, *TextShader;
-cShader * LampShader, * StencilShader, * FBOShader;
+cShader * LampShader, * StencilShader, * FBOShader, *GBufferShader, *DeferredShader;
 cGameObject * Nanosuit, * SanFran;
 cLightManager * LightManager;
 cText * Text;
@@ -35,6 +35,8 @@ std::vector<cFBO*> FBOs;
 
 std::vector< cGameObject * > GOVec;
 std::vector< cGameObject * > GOSkybox;
+std::vector< cGameObject * > GOReflectRefract;
+
 int currentSkybox = 0;
 cGameObject * FBOPlane;
 
@@ -52,6 +54,8 @@ void RenderScene();
 void RenderFboScene();
 void RenderSkybox();
 void RenderText();
+void RenderGBuffer();
+void RenderDeferred();
 
 int width = 1600;
 int height = 900;
@@ -72,20 +76,26 @@ int depthIndex = 0;
 
 int FBOMode = 0;
 
-TEST(TC_INIT, InitializeGLFW)
-{
-	GLCalls = new cGLCalls(width, height, "AssimpImport");
-	ASSERT_TRUE(GLCalls->Initialize() == GL_TRUE);
-}
-TEST(TC_CREATE_WINDOW, CreateGLWindow)
-{
-	ASSERT_TRUE(GLCalls->CreateGLWindow() == GL_TRUE);
-}
+//TEST(TC_INIT, InitializeGLFW)
+//{
+//	
+//	ASSERT_TRUE( == GL_TRUE);
+//}
+//TEST(TC_CREATE_WINDOW, CreateGLWindow)
+//{
+//	ASSERT_TRUE == GL_TRUE);
+//}
 
 int main(int argc, char **argv)
 {
-	::testing::InitGoogleTest(&argc, argv);
-	RUN_ALL_TESTS();	
+	//::testing::InitGoogleTest(&argc, argv);
+	//RUN_ALL_TESTS();	
+
+	GLCalls = new cGLCalls(width, height, "AssimpImport");
+	if (!GLCalls->Initialize())
+		printf("You don fucked up son\n");
+	if(!GLCalls->CreateGLWindow())
+		printf("Shiet\n");
 
 	std::cout << glGetString(GL_RENDERER) << ", " << glGetString(GL_VERSION) << std::endl;
 	std::cout << "Shader language version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
@@ -114,18 +124,25 @@ int main(int argc, char **argv)
 	SkyboxShader = new cShader("assets/shaders/skyboxVert.glsl", "assets/shaders/skyboxFrag.glsl");
 	FBOShader = new cShader("assets/shaders/fboVert.glsl", "assets/shaders/fboFrag.glsl");
 	TextShader = new cShader("assets/shaders/textVertex.glsl", "assets/shaders/textFrag.glsl");
+	GBufferShader = new cShader("assets/shaders/simpleVertex.glsl", "assets/shaders/gBufferFrag.glsl");
+	DeferredShader = new cShader("assets/shaders/simpleVertex.glsl", "assets/deferredFrag.glsl");
 
-	FBOs.push_back(new cFBO(width, height));
-	FBOs.push_back(new cFBO(width, height));
+	FBOs.push_back(new cFBO(width, height)); // 0 - GBuffer
+	FBOs.push_back(new cFBO(width, height)); // 1 - Deferred Shading Buffer
+	FBOs.push_back(new cFBO(width, height)); // 2 - Final Buffer
 
 	Nanosuit = new cGameObject("Nanosuit", "assets/models/nanosuit/nanosuit.obj", glm::vec3(7.0f, 0.0f, 0.0f), glm::vec3(0.2), glm::vec3(0.0f));	
 	SanFran = new cGameObject("Tree", "assets/models/sanfrancisco/houseSF.obj", glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(0.5f), glm::vec3(90.0f, 90.0f, 0.0f));
 	FBOPlane = new cGameObject("FBOPlane", "assets/models/FBOPlane/FboPlane.obj", glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f, 0.0f, 90.0f));
 	GOVec.push_back(Nanosuit);
 	GOVec.push_back(SanFran);
+	GOVec.push_back(new cGameObject("Road", "assets/models/Road/Road_Set.obj", glm::vec3(0.0f), glm::vec3(10.0f), glm::vec3(0.0f)));
 	
 	GOSkybox.push_back(new cGameObject("SkyboxSea", "assets/models/skybox/cube.obj", true, "assets/skybox/ocean"));
 	GOSkybox.push_back(new cGameObject("SkyboxSpace", "assets/models/skybox/cube.obj", true, "assets/skybox/space"));
+
+	GOReflectRefract.push_back(new cGameObject("Nanosuit", "assets/models/nanosuit/nanosuit.obj", glm::vec3(13.0f, 0.0f, 0.0f), glm::vec3(0.2), glm::vec3(0.0f)));
+	GOReflectRefract.push_back(new cGameObject("Nanosuit", "assets/models/nanosuit/nanosuit.obj", glm::vec3(15.0f, 0.0f, 0.0f), glm::vec3(0.2), glm::vec3(0.0f)));
 
 	LightManager = new cLightManager();
 	LightManager->CreateLights();
@@ -160,52 +177,27 @@ int main(int argc, char **argv)
 
 
 
+
+
+
+
+
+
+
 		FBOs[0]->BindFBO();
 		FBOs[0]->ClearBuffers();
-		glEnable(GL_DEPTH_TEST);
-		glClearColor(0.f, 1.f, 1.f, 1.f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
-		Shader->SetInteger("isSecondPass", false);
+		RenderGBuffer();
 		RenderSkybox();
-		RenderScene();
 		RenderText();
 
 
 
-
-		FBOs[0]->UnbindFBO();
+		FBOs[1]->BindFBO();
+		FBOs[1]->ClearBuffers();
 		glDisable(GL_DEPTH_TEST);
 		glClearColor(1.f, 1.f, 1.f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT);
-
-		Shader->Use();
-		Shader->SetInteger("isSecondPass", true);
-
-		glActiveTexture(GL_TEXTURE0 + 15);
-		glBindTexture(GL_TEXTURE_2D, FBOs[0]->texColorBuffer);
-		Shader->SetInteger("texFBOColor", 15, true);
-		//FBOShader->SetInteger("texFBOColor", 15, true);
-
-		glActiveTexture(GL_TEXTURE0 + 16);
-		glBindTexture(GL_TEXTURE_2D, FBOs[0]->texNormalBuffer);
-		Shader->SetInteger("texFBONormal", 16, true);
-		//FBOShader->SetInteger("texFBONormal", 16, true);
-
-		glActiveTexture(GL_TEXTURE0 + 17);
-		glBindTexture(GL_TEXTURE_2D, FBOs[0]->texVertexBuffer);
-		Shader->SetInteger("texFBOVertex", 17, true);
-		//FBOShader->SetInteger("texFBOVertex", 17, true);
-
-		//glActiveTexture(GL_TEXTURE0 + 18);
-		//glBindTexture(GL_TEXTURE_2D, FBOs[0]->texDepthBuffer);
-		//Shader->SetInteger("texFBODepth", 18);
-
-		Shader->SetFloat("screenWidth", width, true);
-		//FBOShader->SetFloat("screenWidth", width, true);
-		Shader->SetFloat("screenHeight", height, true);
-		Shader->SetInteger("FBOMode", FBOMode);
-		FBOs[0]->Draw(*Shader);
+		RenderDeferred();
 
 
 
@@ -225,20 +217,16 @@ void RenderScene()
 	Shader->SetMatrix4("projection", projection);
 	Shader->SetMatrix4("view", view);
 	Shader->SetVector3f("eyePos", camera.GetPosition());
+	Shader->SetInteger("skybox", 20);
+
+	glm::mat4 lightView = glm::lookAt(LightManager->Lights[0].position, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 7.5f);
+	Shader->SetMatrix4("lightSpace", lightProjection * lightView);
 
 	LampShader->Use();
 	LampShader->SetMatrix4("projection", projection, true);
 	LampShader->SetMatrix4("view", view, true);
 	LightManager->LoadLightsIntoShader(*Shader);
-
-	//StencilShader->Use();
-	//StencilShader->SetMatrix4("projection", projection, true);
-	//StencilShader->SetMatrix4("view", view, true);
-	//StencilShader->SetVector3f("eyePos", camera.GetPosition());
-
-	//glStencilFunc(GL_ALWAYS, 1, 0xFF);
-	//glStencilMask(0xFF);
-	////Shader->Use();
 	for (int i = 0; i < GOVec.size(); i++)
 	{
 		glm::mat4 model = glm::mat4(1.0f);
@@ -250,6 +238,23 @@ void RenderScene()
 		Shader->SetMatrix4("model", model, true);
 		GOVec[i]->Draw(*Shader);
 	}
+	for (int i = 0; i < GOReflectRefract.size(); i++)
+	{
+		GOReflectRefract[i]->isReflectRefract = true;
+		GOReflectRefract[i]->RefractCoeff = 1.0f * i;
+		Shader->SetInteger("isReflectRefract", GOReflectRefract[i]->isReflectRefract);
+		Shader->SetFloat("RefractCoeff", GOReflectRefract[i]->RefractCoeff);
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, GOReflectRefract[i]->Position);
+		model = glm::rotate(model, glm::radians(GOReflectRefract[i]->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(GOReflectRefract[i]->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(GOReflectRefract[i]->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, GOReflectRefract[i]->Scale);
+		Shader->SetMatrix4("model", model, true);
+		GOReflectRefract[i]->Draw(*Shader);
+	}
+	Shader->SetInteger("isReflectRefract", false);
+
 	for (int i = 0; i < LightManager->NumLights; i++)
 	{
 		glm::mat4 lightModel = glm::mat4(1.0f);
@@ -258,59 +263,43 @@ void RenderScene()
 		Shader->SetMatrix4("lightModel", lightModel, true);
 	}
 	LightManager->DrawLightsIntoScene(*LampShader);
-
-
-	//Shader->Use();
-	//glm::mat4 model = glm::mat4(1.0f);
-	//model = glm::translate(model, Nanosuit->Position);
-	//model = glm::rotate(model, glm::radians(Nanosuit->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
-	//model = glm::rotate(model, glm::radians(Nanosuit->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
-	//model = glm::rotate(model, glm::radians(Nanosuit->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
-	//model = glm::scale(model, Nanosuit->Scale);
-	//Shader->SetMatrix4("model", model, true);
-	//Nanosuit->Draw(*Shader);
-
-	//glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-	//glStencilMask(0x00);
-	//glDisable(GL_DEPTH_TEST);
-	//StencilShader->Use();
-	//model = glm::mat4(1.0f);
-	//model = glm::translate(model, glm::vec3(Nanosuit->Position.x, Nanosuit->Position.y - 0.05f, Nanosuit->Position.z));
-	//model = glm::rotate(model, glm::radians(Nanosuit->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
-	//model = glm::rotate(model, glm::radians(Nanosuit->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
-	//model = glm::rotate(model, glm::radians(Nanosuit->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
-	//model = glm::scale(model, Nanosuit->Scale + 0.005f);
-	//StencilShader->SetMatrix4("model", model, true);
-	//Nanosuit->Draw(*StencilShader);
-
-	//glStencilMask(0xFF);
-	//glEnable(GL_DEPTH_TEST);
 }
-void RenderFboScene()
+
+void RenderGBuffer()
 {
-	Shader->Use();
+	GBufferShader->Use();
 	glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
 	glm::mat4 view = camera.GetViewMatrix();
-	//glm::mat4 view = glm::lookAt(camera.GetPosition(), FBOPlane->Position, glm::vec3(0.0f, 1.0f, 0.0f));
-
-	Shader->SetMatrix4("projection", projection, true);
-	Shader->SetMatrix4("view", view, true);
-	Shader->SetVector3f("eyePos", camera.GetPosition());
-
-	LampShader->Use();
-	LampShader->SetMatrix4("projection", projection, true);
-	LampShader->SetMatrix4("view", view, true);
-	LightManager->LoadLightsIntoShader(*Shader);
-
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, FBOPlane->Position);
-	model = glm::rotate(model, glm::radians(FBOPlane->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(FBOPlane->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(FBOPlane->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
-	model = glm::scale(model, FBOPlane->Scale);
-	Shader->SetMatrix4("model", model, true);
-	FBOPlane->Draw(*Shader);
-
+	GBufferShader->SetMatrix4("projection", projection);
+	GBufferShader->SetMatrix4("view", view);
+	GBufferShader->SetVector3f("eyePos", camera.GetPosition());
+	for (int i = 0; i < GOVec.size(); i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, GOVec[i]->Position);
+		model = glm::rotate(model, glm::radians(GOVec[i]->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(GOVec[i]->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(GOVec[i]->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, GOVec[i]->Scale);
+		GBufferShader->SetMatrix4("model", model, true);
+		GOVec[i]->Draw(*Shader);
+	}
+	for (int i = 0; i < GOReflectRefract.size(); i++)
+	{
+		GOReflectRefract[i]->isReflectRefract = true;
+		GOReflectRefract[i]->RefractCoeff = 1.0f * i;
+		GBufferShader->SetInteger("isReflectRefract", GOReflectRefract[i]->isReflectRefract);
+		GBufferShader->SetFloat("RefractCoeff", GOReflectRefract[i]->RefractCoeff);
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, GOReflectRefract[i]->Position);
+		model = glm::rotate(model, glm::radians(GOReflectRefract[i]->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(GOReflectRefract[i]->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(GOReflectRefract[i]->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, GOReflectRefract[i]->Scale);
+		GBufferShader->SetMatrix4("model", model, true);
+		GOReflectRefract[i]->Draw(*Shader);
+	}
+	Shader->SetInteger("isReflectRefract", false);
 	for (int i = 0; i < LightManager->NumLights; i++)
 	{
 		glm::mat4 lightModel = glm::mat4(1.0f);
@@ -320,17 +309,40 @@ void RenderFboScene()
 	}
 	LightManager->DrawLightsIntoScene(*LampShader);
 }
+
+void RenderDeferred()
+{
+	DeferredShader->Use();
+	
+	glActiveTexture(GL_TEXTURE0 + 15);
+	glBindTexture(GL_TEXTURE_2D, FBOs[0]->texColorBuffer);
+	DeferredShader->SetInteger("texFBOColor", 15, true);
+	glActiveTexture(GL_TEXTURE0 + 16);
+	glBindTexture(GL_TEXTURE_2D, FBOs[0]->texNormalBuffer);
+	DeferredShader->SetInteger("texFBONormal", 16, true);
+	glActiveTexture(GL_TEXTURE0 + 17);
+	glBindTexture(GL_TEXTURE_2D, FBOs[0]->texVertexBuffer);
+	DeferredShader->SetInteger("texFBOVertex", 17, true);
+
+	DeferredShader->SetFloat("screenWidth", width, true);
+	DeferredShader->SetFloat("screenHeight", height, true);
+	DeferredShader->SetInteger("FBOMode", FBOMode);
+	FBOs[0]->Draw(*Shader);
+}
+
 void RenderSkybox()
 {
 	glDepthFunc(GL_LEQUAL);	
 
 	SkyboxShader->Use();
 	SkyboxShader->SetInteger("skybox", 20);
+
 	//Shader->SetInteger("isSkybox", true);
 	glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
 	glm::mat4 view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
 	SkyboxShader->SetMatrix4("projection", projection, true);
 	SkyboxShader->SetMatrix4("view", view, true);
+
 
 	GOSkybox[currentSkybox]->Draw(*SkyboxShader);
 

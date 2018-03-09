@@ -152,8 +152,19 @@
     <ClInclude Include="eDepthType.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="assets\shaders\fboFrag.glsl" />
+    <None Include="assets\shaders\fboVert.glsl" />
+    <None Include="assets\shaders\lampFragment.glsl" />
+    <None Include="assets\shaders\lampShader.glsl" />
     <None Include="assets\shaders\simpleFragment.glsl" />
     <None Include="assets\shaders\simpleVertex.glsl" />
+    <None Include="assets\shaders\skyboxFrag.glsl" />
+    <None Include="assets\shaders\skyboxVert.glsl" />
+    <None Include="assets\shaders\stencilFragment.glsl" />
+    <None Include="assets\shaders\textFrag.glsl" />
+    <None Include="assets\shaders\textVertex.glsl" />
+    <None Include="deferredFrag.glsl" />
+    <None Include="gBufferFrag.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

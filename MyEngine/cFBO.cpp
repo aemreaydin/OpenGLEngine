@@ -88,6 +88,8 @@ bool cFBO::fboInit()
 	glGenTextures(1, &this->texDepthBuffer);
 	glBindTexture(GL_TEXTURE_2D, this->texDepthBuffer);
 	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, this->sWidth, this->sHeight);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	// Create the framebuffer textures
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, this->texColorBuffer, 0);

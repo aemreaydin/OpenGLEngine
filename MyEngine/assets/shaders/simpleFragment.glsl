@@ -2,11 +2,13 @@
 layout(location=0) out vec4 FragColor;
 layout(location=1) out vec4 FragNormal;
 layout(location=2) out vec4 FragVertex;
+layout(location=3) out vec4 FragDepth;
 // From Vertex Shader
 in vec3 Normal;
 in vec3 ObjectPosition;
 in vec2 TexCoords;
 in vec3 LightPosition;
+in vec4 LightPOV;
 
 // Light Properties
 struct sLight
@@ -56,6 +58,9 @@ uniform samplerCube skybox;
 uniform bool isSecondPass;
 uniform bool isSkybox;
 
+uniform bool isReflectRefract;
+uniform float RefractCoeff;
+
 
 uniform float blurOffsets[5] = float[]( 0.0, 1.0, 2.0, 3.0, 4.0 );
 uniform float blurWeights[5] = float[]( 0.2270270270, 0.1945945946, 0.1216216216,
@@ -72,6 +77,23 @@ void main()
 	vec4 textureColor = (texture(texture_diffuse1, TexCoords.xy));
 
 
+	if(isReflectRefract)
+	{
+		vec3 I = normalize(ObjectPosition - eyePos);
+		vec3 ReflectR = reflect(I, normalize(Normal));
+		vec3 RefractR = refract(I, normalize(Normal), RefractCoeff);
+
+		vec4 ReflectColor = vec4(texture(skybox, ReflectR).rgb, 1.0);
+		vec4 RefractColor = vec4(texture(skybox, RefractR).rgb, 1.0);
+
+		vec3 viewVector = normalize(eyePos);
+		float refractiveFactor = dot(viewVector, vec3(0.0, 1.0, 0.0));
+
+		FragColor = mix(ReflectColor, RefractColor, refractiveFactor);
+		FragNormal = vec4(normalize(Normal) * 0.5 + 0.5, 1.0);
+		FragVertex = vec4(ObjectPosition, 1.0f);
+		return;
+	}
 
 	if(isSecondPass)
 	{
@@ -80,6 +102,7 @@ void main()
 		vec4 colorAtThisPixel = texture(texFBOColor, textScreenCoords).rgba;
 		vec4 normalAtThisPixel = texture(texFBONormal, textScreenCoords).rgba;
 		vec4 vertexAtThisPixel = texture(texFBOVertex, textScreenCoords).rgba;
+		vec4 depthAtThisPixel = texture(texFBODepth, textScreenCoords).rgba;
 
 
 		vec3 norm = normalize(normalAtThisPixel.rgb);
@@ -98,7 +121,7 @@ void main()
 				result += calcSpotLight(Lights[i], norm.rgb, vertexAtThisPixel.rgb, viewDir, colorAtThisPixel.rgba);
 		}
 		if(FBOMode == 0) // Output with lighting
-			FragColor = vec4(result.rgb, 1.0);
+			FragColor = vec4(result, 1.0);
 		else if(FBOMode == 1) // Output without lighting
 			FragColor = vec4(colorAtThisPixel.rgb, 1.0);
 		else if(FBOMode == 2) // Normals
@@ -153,17 +176,26 @@ void main()
 		}
 		else if(FBOMode == 9) // Cos-Sine Time
 		{
-			FragColor = vec4(texture(texFBOColor, textScreenCoords + 
-				0.005*vec2(sin(time+1024.0*textScreenCoords.x), 
-				cos(time+768.0*textScreenCoords))).rgb, 1.0);
+			vec2 timeUV;
+			timeUV.x = 0.35 * sin(time * 50.0);
+			timeUV.y = 0.35 * cos(time * 50.0);
+
+			vec4 color = vec4(texture(texFBOColor, textScreenCoords).rgb, 1.0);
+			vec3 greenDom = vec3(0.3, 0.59, 0.11);
+			float intensity = dot(greenDom, color.rgb);
+
+			float greenOut = clamp(0.5 * (intensity - 0.5) + 0.5, 0.0, 1.0);
+			vec3 outColor = vec3(0, greenOut, 0);
+
+			FragColor = vec4(outColor, 1.0);
 		}
 		return;
 	}
 	//float Depth = texture(texFBODepth, TexCoords.xy).x;
 	//Depth = 1.0 - (1.0 - Depth) * 25.0;
 	FragColor = vec4(textureColor.rgb, 1.0);
-	//FragColor = vec4(Depth);
-	FragNormal = vec4(Normal, 1.0);
+	FragDepth = vec4(LightPOV.xyz, 1.0);
+	FragNormal = vec4(normalize(Normal) * 0.5 + 0.5, 1.0);
 	FragVertex = vec4(ObjectPosition, 1.0);
 }
 
