@@ -164,7 +164,9 @@
     <None Include="assets\shaders\textFrag.glsl" />
     <None Include="assets\shaders\textVertex.glsl" />
     <None Include="deferredFrag.glsl" />
+    <None Include="deferredVert.glsl" />
     <None Include="gBufferFrag.glsl" />
+    <None Include="gBufferVert.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

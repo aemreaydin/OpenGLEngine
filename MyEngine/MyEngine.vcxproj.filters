@@ -127,5 +127,11 @@
     <None Include="deferredFrag.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="deferredVert.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="gBufferVert.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -1,11 +1,11 @@
 #version 430
 layout(location = 0) out vec4 FragColor;
 
-in vec3 Normal;
-in vec3 ObjectPosition;
+// in 3 Normal;
+// in vec3 ObjectPosition;
 in vec2 TexCoords;
-in vec3 LightPosition;
-in vec4 LightPOV;
+//in vec3 LightPosition;
+// in vec4 LightPOV;
 
 struct sLight
 {
@@ -20,6 +20,7 @@ struct sLight
 };
 uniform int NumLights;
 uniform sLight Lights[100];
+uniform vec3 eyePos;
 
 uniform sampler2D texFBOColor;
 uniform sampler2D texFBONormal;
@@ -48,7 +49,6 @@ void main()
 	vec4 colorAtThisPixel = texture(texFBOColor, textScreenCoords).rgba;
 	vec4 normalAtThisPixel = texture(texFBONormal, textScreenCoords).rgba;
 	vec4 vertexAtThisPixel = texture(texFBOVertex, textScreenCoords).rgba;
-	vec4 depthAtThisPixel = texture(texFBODepth, textScreenCoords).rgba;
 
 
 	vec3 norm = normalize(normalAtThisPixel.rgb);
@@ -65,75 +65,7 @@ void main()
 		else if (Lights[i].LightType == 2)
 			result += calcSpotLight(Lights[i], norm.rgb, vertexAtThisPixel.rgb, viewDir, colorAtThisPixel.rgba);
 	}
-	if (FBOMode == 0) // Output with lighting
-		FragColor = vec4(result, 1.0);
-	else if (FBOMode == 1) // Output without lighting
-		FragColor = vec4(colorAtThisPixel.rgb, 1.0);
-	else if (FBOMode == 2) // Normals
-		FragColor = vec4(normalAtThisPixel.rgb, 1.0);
-	else if (FBOMode == 3) // Vertices
-		FragColor = vec4(vertexAtThisPixel.rgb, 1.0);
-	else if (FBOMode == 4) // Inverted Output	
-		FragColor = vec4(1.0, 1.0, 1.0, 1.0) - vec4(colorAtThisPixel.rgb, 0.0);
-	else if (FBOMode == 5) // Grayscale
-	{
-		float gray = (normalAtThisPixel.r * 0.299 + normalAtThisPixel.g * 0.587 + normalAtThisPixel.b * 0.114);
-		FragColor = vec4(gray, gray, gray, 1.0);
-	}
-	else if (FBOMode == 6) // Blur --- TODO: Gaussian Blur
-	{
-		// FragColor = textire(texFBOColor, textScreenCoords) * blurWeights[0];
-		// for(int i = 1; i != 5; i++)
-		// {
-		// 	FragColor += texture(texFBOColor, vec2(textScreenCoords) + vec2(0.0, blurOffsets[i])) * blurWeights[i];
-		// }
-		// FragColor = vec4(sum.rgb, 1.0);
-	}
-	else if (FBOMode == 7) // Edge Detection
-	{
-		vec4 top = texture(texFBOColor, vec2(textScreenCoords.x, textScreenCoords.y + 1.0 / 400.0)).rgba;
-		vec4 bottom = texture(texFBOColor, vec2(textScreenCoords.x, textScreenCoords.y - 1.0 / 400.0)).rgba;
-		vec4 left = texture(texFBOColor, vec2(textScreenCoords.x - 1.0 / 600.0, textScreenCoords.y)).rgba;
-		vec4 right = texture(texFBOColor, vec2(textScreenCoords.x + 1.0 / 600.0, textScreenCoords.y)).rgba;
-		vec4 topLeft = texture(texFBOColor, vec2(textScreenCoords.x - 1.0 / 600.0, textScreenCoords.y + 1.0 / 400.0)).rgba;
-		vec4 topRight = texture(texFBOColor, vec2(textScreenCoords.x + 1.0 / 600.0, textScreenCoords.y + 1.0 / 400.0)).rgba;
-		vec4 bottomLeft = texture(texFBOColor, vec2(textScreenCoords.x - 1.0 / 600.0, textScreenCoords.y - 1.0 / 400.0)).rgba;
-		vec4 bottomRight = texture(texFBOColor, vec2(textScreenCoords.x + 1.0 / 600.0, textScreenCoords.y - 1.0 / 400.0)).rgba;
-		vec4 sx = -topLeft - 2 * left - bottomLeft + topRight + 2 * right + bottomRight;
-		vec4 sy = -topLeft - 2 * top - topRight + bottomLeft + 2 * bottom + bottomRight;
-		vec4 sobel = sqrt(sx * sx + sy * sy);
-		FragColor = vec4(sobel.rgb, 1.0);
-	}
-	else if (FBOMode == 8) // Edge Detection Alternative
-	{
-		vec4 top = texture(texFBOColor, vec2(textScreenCoords.x, textScreenCoords.y + 1.0 / 400.0)).rgba;
-		vec4 bottom = texture(texFBOColor, vec2(textScreenCoords.x, textScreenCoords.y - 1.0 / 400.0)).rgba;
-		vec4 left = texture(texFBOColor, vec2(textScreenCoords.x - 1.0 / 600.0, textScreenCoords.y)).rgba;
-		vec4 right = texture(texFBOColor, vec2(textScreenCoords.x + 1.0 / 600.0, textScreenCoords.y)).rgba;
-		vec4 topLeft = texture(texFBOColor, vec2(textScreenCoords.x - 1.0 / 600.0, textScreenCoords.y + 1.0 / 400.0)).rgba;
-		vec4 topRight = texture(texFBOColor, vec2(textScreenCoords.x + 1.0 / 600.0, textScreenCoords.y + 1.0 / 400.0)).rgba;
-		vec4 bottomLeft = texture(texFBOColor, vec2(textScreenCoords.x - 1.0 / 600.0, textScreenCoords.y - 1.0 / 400.0)).rgba;
-		vec4 bottomRight = texture(texFBOColor, vec2(textScreenCoords.x + 1.0 / 600.0, textScreenCoords.y - 1.0 / 400.0)).rgba;
-		vec4 sx = -3 * topLeft - 10 * left - 3 * bottomLeft + 3 * topRight + 10 * right + 3 * bottomRight;
-		vec4 sy = -3 * topLeft - 10 * top - 3 * topRight + 3 * bottomLeft + 10 * bottom + 3 * bottomRight;
-		vec4 sobel = sqrt(sx * sx + sy * sy);
-		FragColor = vec4(sobel.rgb, 1.0);
-	}
-	else if (FBOMode == 9) // Cos-Sine Time
-	{
-		vec2 timeUV;
-		timeUV.x = 0.35 * sin(time * 50.0);
-		timeUV.y = 0.35 * cos(time * 50.0);
-
-		vec4 color = vec4(texture(texFBOColor, textScreenCoords).rgb, 1.0);
-		vec3 greenDom = vec3(0.3, 0.59, 0.11);
-		float intensity = dot(greenDom, color.rgb);
-
-		float greenOut = clamp(0.5 * (intensity - 0.5) + 0.5, 0.0, 1.0);
-		vec3 outColor = vec3(0, greenOut, 0);
-
-		FragColor = vec4(outColor, 1.0);
-	}
+	FragColor = vec4(result, 1.0);
 }
 
 

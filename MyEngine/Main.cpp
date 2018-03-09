@@ -56,6 +56,7 @@ void RenderSkybox();
 void RenderText();
 void RenderGBuffer();
 void RenderDeferred();
+void RenderFinal();
 
 int width = 1600;
 int height = 900;
@@ -124,8 +125,8 @@ int main(int argc, char **argv)
 	SkyboxShader = new cShader("assets/shaders/skyboxVert.glsl", "assets/shaders/skyboxFrag.glsl");
 	FBOShader = new cShader("assets/shaders/fboVert.glsl", "assets/shaders/fboFrag.glsl");
 	TextShader = new cShader("assets/shaders/textVertex.glsl", "assets/shaders/textFrag.glsl");
-	GBufferShader = new cShader("assets/shaders/simpleVertex.glsl", "assets/shaders/gBufferFrag.glsl");
-	DeferredShader = new cShader("assets/shaders/simpleVertex.glsl", "assets/deferredFrag.glsl");
+	GBufferShader = new cShader("assets/shaders/gBufferVert.glsl", "assets/shaders/gBufferFrag.glsl");
+	DeferredShader = new cShader("assets/shaders/deferredVert.glsl", "assets/shaders/deferredFrag.glsl");
 
 	FBOs.push_back(new cFBO(width, height)); // 0 - GBuffer
 	FBOs.push_back(new cFBO(width, height)); // 1 - Deferred Shading Buffer
@@ -171,35 +172,25 @@ int main(int argc, char **argv)
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-
 		processInput(GLCalls->GetWindow());
 		glfwGetFramebufferSize(GLCalls->GetWindow(), &width, &height);
 
 
-
-
-
-
-
-
-
-
+		// Render to G-Buffer Pass
 		FBOs[0]->BindFBO();
-		FBOs[0]->ClearBuffers();
 		RenderGBuffer();
 		RenderSkybox();
 		RenderText();
-
-
-
+		FBOs[0]->Draw(*GBufferShader);
+		// Render to Deferred Pass
 		FBOs[1]->BindFBO();
-		FBOs[1]->ClearBuffers();
-		glDisable(GL_DEPTH_TEST);
-		glClearColor(1.f, 1.f, 1.f, 1.f);
-		glClear(GL_COLOR_BUFFER_BIT);
 		RenderDeferred();
-
-
+		FBOs[1]->Draw(*DeferredShader);
+		// Final Pass		
+		FBOs[1]->UnbindFBO();
+		RenderFinal();
+		FBOs[2]->Draw(*Shader);
+		
 
 		glfwPollEvents();
 		glfwSwapBuffers(GLCalls->GetWindow());
@@ -267,12 +258,18 @@ void RenderScene()
 
 void RenderGBuffer()
 {
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
 	GBufferShader->Use();
 	glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
 	glm::mat4 view = camera.GetViewMatrix();
 	GBufferShader->SetMatrix4("projection", projection);
 	GBufferShader->SetMatrix4("view", view);
 	GBufferShader->SetVector3f("eyePos", camera.GetPosition());
+	GBufferShader->SetInteger("skybox", 20);
+
 	for (int i = 0; i < GOVec.size(); i++)
 	{
 		glm::mat4 model = glm::mat4(1.0f);
@@ -282,7 +279,7 @@ void RenderGBuffer()
 		model = glm::rotate(model, glm::radians(GOVec[i]->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
 		model = glm::scale(model, GOVec[i]->Scale);
 		GBufferShader->SetMatrix4("model", model, true);
-		GOVec[i]->Draw(*Shader);
+		GOVec[i]->Draw(*GBufferShader);
 	}
 	for (int i = 0; i < GOReflectRefract.size(); i++)
 	{
@@ -297,22 +294,36 @@ void RenderGBuffer()
 		model = glm::rotate(model, glm::radians(GOReflectRefract[i]->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
 		model = glm::scale(model, GOReflectRefract[i]->Scale);
 		GBufferShader->SetMatrix4("model", model, true);
-		GOReflectRefract[i]->Draw(*Shader);
+		GOReflectRefract[i]->Draw(*GBufferShader);
 	}
-	Shader->SetInteger("isReflectRefract", false);
-	for (int i = 0; i < LightManager->NumLights; i++)
-	{
-		glm::mat4 lightModel = glm::mat4(1.0f);
-		lightModel = glm::translate(lightModel, LightManager->Lights[i].position);
-		lightModel = glm::scale(lightModel, glm::vec3(0.2f));
-		Shader->SetMatrix4("lightModel", lightModel, true);
-	}
-	LightManager->DrawLightsIntoScene(*LampShader);
+	GBufferShader->SetInteger("isReflectRefract", false);
+	//for (int i = 0; i < LightManager->NumLights; i++)
+	//{
+	//	glm::mat4 lightModel = glm::mat4(1.0f);
+	//	lightModel = glm::translate(lightModel, LightManager->Lights[i].position);
+	//	lightModel = glm::scale(lightModel, glm::vec3(0.2f));
+	//	Shader->SetMatrix4("lightModel", lightModel, true);
+	//}
+	//LightManager->DrawLightsIntoScene(*LampShader);
 }
 
 void RenderDeferred()
 {
+	glDisable(GL_DEPTH_TEST);
+	glClearColor(1.f, 1.f, 1.f, 1.f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
 	DeferredShader->Use();
+
+	DeferredShader->SetVector3f("eyePos", camera.GetPosition());
+	LightManager->LoadLightsIntoShader(*DeferredShader);
+	//for (int i = 0; i < LightManager->NumLights; i++)
+	//{
+	//	glm::mat4 lightModel = glm::mat4(1.0f);
+	//	lightModel = glm::translate(lightModel, LightManager->Lights[i].position);
+	//	lightModel = glm::scale(lightModel, glm::vec3(0.2f));
+	//	Shader->SetMatrix4("lightModel", lightModel, true);
+	//}
 	
 	glActiveTexture(GL_TEXTURE0 + 15);
 	glBindTexture(GL_TEXTURE_2D, FBOs[0]->texColorBuffer);
@@ -326,8 +337,21 @@ void RenderDeferred()
 
 	DeferredShader->SetFloat("screenWidth", width, true);
 	DeferredShader->SetFloat("screenHeight", height, true);
-	DeferredShader->SetInteger("FBOMode", FBOMode);
-	FBOs[0]->Draw(*Shader);
+
+}
+
+void RenderFinal()
+{
+	glClearColor(1.f, 1.f, 1.f, 1.f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glActiveTexture(GL_TEXTURE0 + 21);
+	glBindTexture(GL_TEXTURE_2D, FBOs[1]->texColorBuffer);
+	Shader->Use();
+	Shader->SetInteger("finalTexture", 21, true);
+	Shader->SetFloat("screenWidth", width, true);
+	Shader->SetFloat("screenHeight", height, true);
+	Shader->SetInteger("FBOMode", FBOMode);
 }
 
 void RenderSkybox()

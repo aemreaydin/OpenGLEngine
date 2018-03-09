@@ -7,11 +7,16 @@ layout(location = 2) out vec4 FragVertex;
 in vec3 Normal;
 in vec3 ObjectPosition;
 in vec2 TexCoords;
-in vec3 LightPosition;
-in vec4 LightPOV;
+// in vec3 LightPosition;
+// in vec4 LightPOV;
 
 uniform sampler2D texture_diffuse1;
 uniform vec3 eyePos;
+
+uniform bool isReflectRefract;
+uniform float RefractCoeff;
+
+uniform samplerCube skybox;
 
 void main()
 {
@@ -35,5 +40,5 @@ void main()
 
 	FragColor = vec4(texture(texture_diffuse1, TexCoords).rgb, 1.0);
 	FragNormal = vec4(normalize(Normal) * 0.5 + 0.5, 1.0);
-	FragVertex = vec4(ObjectPOsition, 1.0);
+	FragVertex = vec4(ObjectPosition, 1.0);
 }
