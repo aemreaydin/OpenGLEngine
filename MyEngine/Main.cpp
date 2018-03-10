@@ -9,7 +9,9 @@
 #include "cLightManager.h"
 #include "eDepthType.h"
 #include "cFBO.h"
+#include "cShadowFBO.h"
 #include "cText.h"
+#include "cTexture.h"
 
 #define _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
 #define _CRT_SECURE_NO_WARNINGS
@@ -26,12 +28,15 @@
 
 cGLCalls* GLCalls;
 cShader * Shader, * SkyboxShader, *TextShader;
-cShader * LampShader, * StencilShader, * FBOShader, *GBufferShader, *DeferredShader;
+cShader * LampShader, * StencilShader, * FBOShader, *GBufferShader, *DeferredShader, *ShadowShader;
 cGameObject * Nanosuit, * SanFran;
 cLightManager * LightManager;
 cText * Text;
+cTexture * StepTexture;
 
 std::vector<cFBO*> FBOs;
+cFBO * ToonFBO;
+cShadowFBO * ShadowFBO;
 
 std::vector< cGameObject * > GOVec;
 std::vector< cGameObject * > GOSkybox;
@@ -54,6 +59,7 @@ void RenderScene();
 void RenderFboScene();
 void RenderSkybox();
 void RenderText();
+void RenderShadow();
 void RenderGBuffer();
 void RenderDeferred();
 void RenderFinal();
@@ -76,6 +82,7 @@ GL_DEPTH_TYPE depthType;
 int depthIndex = 0;
 
 int FBOMode = 0;
+bool withShadow = false;
 
 //TEST(TC_INIT, InitializeGLFW)
 //{
@@ -127,29 +134,37 @@ int main(int argc, char **argv)
 	TextShader = new cShader("assets/shaders/textVertex.glsl", "assets/shaders/textFrag.glsl");
 	GBufferShader = new cShader("assets/shaders/gBufferVert.glsl", "assets/shaders/gBufferFrag.glsl");
 	DeferredShader = new cShader("assets/shaders/deferredVert.glsl", "assets/shaders/deferredFrag.glsl");
+	ShadowShader = new cShader("assets/shaders/shadowVert.glsl", "assets/shaders/shadowFrag.glsl");
+
 
 	FBOs.push_back(new cFBO(width, height)); // 0 - GBuffer
 	FBOs.push_back(new cFBO(width, height)); // 1 - Deferred Shading Buffer
 	FBOs.push_back(new cFBO(width, height)); // 2 - Final Buffer
-
+	ToonFBO = new cFBO(width, height);
+	ShadowFBO = new cShadowFBO(width, height);
+	
 	Nanosuit = new cGameObject("Nanosuit", "assets/models/nanosuit/nanosuit.obj", glm::vec3(7.0f, 0.0f, 0.0f), glm::vec3(0.2), glm::vec3(0.0f));	
 	SanFran = new cGameObject("Tree", "assets/models/sanfrancisco/houseSF.obj", glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(0.5f), glm::vec3(90.0f, 90.0f, 0.0f));
 	FBOPlane = new cGameObject("FBOPlane", "assets/models/FBOPlane/FboPlane.obj", glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f, 0.0f, 90.0f));
 	GOVec.push_back(Nanosuit);
 	GOVec.push_back(SanFran);
 	GOVec.push_back(new cGameObject("Road", "assets/models/Road/Road_Set.obj", glm::vec3(0.0f), glm::vec3(10.0f), glm::vec3(0.0f)));
-	
+	GOVec.push_back(new cGameObject("Sphere", "assets/models/Sphere.obj", glm::vec3(-3.0f, 5.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f)));
+
 	GOSkybox.push_back(new cGameObject("SkyboxSea", "assets/models/skybox/cube.obj", true, "assets/skybox/ocean"));
 	GOSkybox.push_back(new cGameObject("SkyboxSpace", "assets/models/skybox/cube.obj", true, "assets/skybox/space"));
 
 	GOReflectRefract.push_back(new cGameObject("Nanosuit", "assets/models/nanosuit/nanosuit.obj", glm::vec3(13.0f, 0.0f, 0.0f), glm::vec3(0.2), glm::vec3(0.0f)));
 	GOReflectRefract.push_back(new cGameObject("Nanosuit", "assets/models/nanosuit/nanosuit.obj", glm::vec3(15.0f, 0.0f, 0.0f), glm::vec3(0.2), glm::vec3(0.0f)));
 
+	StepTexture = new cTexture("assets/textures/stepTexture.jpg");
+
 	LightManager = new cLightManager();
 	LightManager->CreateLights();
 	LightManager->LoadLampsIntoShader(*LampShader);
 
 	Text = new cText("assets/fonts/04B_30__.TTF");
+
 
 
 
@@ -176,7 +191,13 @@ int main(int argc, char **argv)
 		glfwGetFramebufferSize(GLCalls->GetWindow(), &width, &height);
 
 
+		// Render to Shadow Pass
+		//glViewport(0, 0, 4096, 4096);
+		ShadowFBO->BindFBO();
+		RenderShadow();
+
 		// Render to G-Buffer Pass
+		//glViewport(0, 0, width, height);
 		FBOs[0]->BindFBO();
 		RenderGBuffer();
 		RenderSkybox();
@@ -190,7 +211,6 @@ int main(int argc, char **argv)
 		FBOs[1]->UnbindFBO();
 		RenderFinal();
 		FBOs[2]->Draw(*Shader);
-		
 
 		glfwPollEvents();
 		glfwSwapBuffers(GLCalls->GetWindow());
@@ -255,18 +275,62 @@ void RenderScene()
 	}
 	LightManager->DrawLightsIntoScene(*LampShader);
 }
-
-void RenderGBuffer()
-{
+void RenderShadow()
+{	
 	glEnable(GL_DEPTH_TEST);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glCullFace(GL_FRONT);
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(2.0f, 2.0f);
+	
+	glm::mat4 LightProjection = glm::ortho(-25.0f, 25.0f, -25.0f, 25.0f, -15.0f, 100.0f);
+	glm::mat4 LightView = glm::lookAt(LightManager->Lights[0].position, LightManager->Lights[0].direction, glm::vec3(0.0f, 1.0f, 0.0f));
 
+	ShadowShader->Use();
+	ShadowShader->SetMatrix4("lightProjection", LightProjection);
+	ShadowShader->SetMatrix4("lightView", LightView);
+
+	for (int i = 0; i < GOVec.size(); i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, GOVec[i]->Position);
+		model = glm::rotate(model, glm::radians(GOVec[i]->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(GOVec[i]->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(GOVec[i]->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, GOVec[i]->Scale);
+		ShadowShader->SetMatrix4("model", model, true);
+		GOVec[i]->Draw(*ShadowShader);
+	}
+	for (int i = 0; i < GOReflectRefract.size(); i++)
+	{
+		//GOReflectRefract[i]->isReflectRefract = true;
+		//GOReflectRefract[i]->RefractCoeff = 1.0f * i;
+		//GBufferShader->SetInteger("isReflectRefract", GOReflectRefract[i]->isReflectRefract);
+		//GBufferShader->SetFloat("RefractCoeff", GOReflectRefract[i]->RefractCoeff);
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, GOReflectRefract[i]->Position);
+		model = glm::rotate(model, glm::radians(GOReflectRefract[i]->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(GOReflectRefract[i]->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(GOReflectRefract[i]->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, GOReflectRefract[i]->Scale);
+		ShadowShader->SetMatrix4("model", model, true);
+		GOReflectRefract[i]->Draw(*ShadowShader);
+	}
+	glDisable(GL_POLYGON_OFFSET_FILL);
+	glCullFace(GL_BACK);
+}
+void RenderGBuffer()
+{
+	
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	GBufferShader->Use();
 	glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
 	glm::mat4 view = camera.GetViewMatrix();
 	GBufferShader->SetMatrix4("projection", projection);
 	GBufferShader->SetMatrix4("view", view);
+
 	GBufferShader->SetVector3f("eyePos", camera.GetPosition());
 	GBufferShader->SetInteger("skybox", 20);
 
@@ -297,6 +361,8 @@ void RenderGBuffer()
 		GOReflectRefract[i]->Draw(*GBufferShader);
 	}
 	GBufferShader->SetInteger("isReflectRefract", false);
+
+
 	//for (int i = 0; i < LightManager->NumLights; i++)
 	//{
 	//	glm::mat4 lightModel = glm::mat4(1.0f);
@@ -313,8 +379,13 @@ void RenderDeferred()
 	glClearColor(1.f, 1.f, 1.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
+
+	glm::mat4 LightProjection = glm::ortho(-25.0f, 25.0f, -25.0f, 25.0f, -15.0f, 100.0f);
+	glm::mat4 LightView = glm::lookAt(LightManager->Lights[0].position, LightManager->Lights[0].direction, glm::vec3(0.0f, 1.0f, 0.0f));
 	DeferredShader->Use();
 
+	DeferredShader->SetMatrix4("lightProjection", LightProjection);
+	DeferredShader->SetMatrix4("lightView", LightView);
 	DeferredShader->SetVector3f("eyePos", camera.GetPosition());
 	LightManager->LoadLightsIntoShader(*DeferredShader);
 	//for (int i = 0; i < LightManager->NumLights; i++)
@@ -334,10 +405,20 @@ void RenderDeferred()
 	glActiveTexture(GL_TEXTURE0 + 17);
 	glBindTexture(GL_TEXTURE_2D, FBOs[0]->texVertexBuffer);
 	DeferredShader->SetInteger("texFBOVertex", 17, true);
+	glActiveTexture(GL_TEXTURE0 + 18);
+	glBindTexture(GL_TEXTURE_2D, FBOs[0]->texDepthBuffer);
+	DeferredShader->SetInteger("texFBODepth", 18, true);
+	glActiveTexture(GL_TEXTURE0 + 22);
+	glBindTexture(GL_TEXTURE_2D, ShadowFBO->texDepthBuffer);
+	DeferredShader->SetInteger("shadowMap", 22);
+
+	StepTexture->Bind(23);
+	DeferredShader->SetInteger("stepTexture", 23);
 
 	DeferredShader->SetFloat("screenWidth", width, true);
 	DeferredShader->SetFloat("screenHeight", height, true);
-
+	DeferredShader->SetInteger("FBOMode", FBOMode);
+	DeferredShader->SetInteger("isShadowMapped", withShadow);
 }
 
 void RenderFinal()
@@ -351,7 +432,7 @@ void RenderFinal()
 	Shader->SetInteger("finalTexture", 21, true);
 	Shader->SetFloat("screenWidth", width, true);
 	Shader->SetFloat("screenHeight", height, true);
-	Shader->SetInteger("FBOMode", FBOMode);
+
 }
 
 void RenderSkybox()
@@ -431,6 +512,10 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode
 	if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS)
 	{
 		FBOMode = 9;
+	}
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+	{
+		withShadow = !withShadow;
 	}
 }
 

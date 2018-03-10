@@ -10,10 +10,12 @@ out vec3 Normal;
 out vec3 ObjectPosition;
 out vec2 TexCoords;
 //out vec3 LightPosition;
-//out vec4 LightPOV;
+//out vec4 ShadowCoord;
 
-// uniform mat4 lightModel;
-// uniform mat4 lightSpaceMatrix;
+uniform mat4 lightProjection;
+uniform mat4 lightView;
+
+
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
@@ -21,11 +23,15 @@ uniform mat4 projection;
 
 void main()
 {
+
+
 	TexCoords.xy = aTexCoords;
 	Normal = mat3(transpose(inverse(model))) * aNormal;
-	//LightPosition = vec3(lightModel * vec4(lightPosition, 1.0));
 	ObjectPosition = vec3(model * vec4(aPos, 1.0));
-	//LightPOV = lightSpaceMatrix * vec4(ObjectPosition, 1.0);
+
+
+	//ShadowCoord = biasMatrix * lightProjection * lightView * vec4(ObjectPosition, 1.0);
+
 	gl_Position = projection * view * model * vec4(aPos, 1.0);
 	return;
 }

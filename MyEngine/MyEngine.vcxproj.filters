@@ -51,6 +51,12 @@
     <ClCompile Include="cText.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cShadowFBO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">
@@ -84,6 +90,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="cText.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cShadowFBO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cTexture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

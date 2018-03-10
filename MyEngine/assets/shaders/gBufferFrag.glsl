@@ -3,12 +3,13 @@
 layout(location = 0) out vec4 FragColor;
 layout(location = 1) out vec4 FragNormal;
 layout(location = 2) out vec4 FragVertex;
+layout(location = 3) out vec4 FragDepth;
 
 in vec3 Normal;
 in vec3 ObjectPosition;
 in vec2 TexCoords;
 // in vec3 LightPosition;
-// in vec4 LightPOV;
+//in vec4 ShadowCoord;
 
 uniform sampler2D texture_diffuse1;
 uniform vec3 eyePos;
@@ -17,6 +18,9 @@ uniform bool isReflectRefract;
 uniform float RefractCoeff;
 
 uniform samplerCube skybox;
+
+//uniform sampler2D shadowMap;
+
 
 void main()
 {
@@ -32,6 +36,7 @@ void main()
 		vec3 viewVector = normalize(eyePos);
 		float refractiveFactor = dot(viewVector, vec3(0.0, 1.0, 0.0));
 
+
 		FragColor = mix(ReflectColor, RefractColor, refractiveFactor);
 		FragNormal = vec4(normalize(Normal) * 0.5 + 0.5, 1.0);
 		FragVertex = vec4(ObjectPosition, 1.0f);
@@ -41,4 +46,5 @@ void main()
 	FragColor = vec4(texture(texture_diffuse1, TexCoords).rgb, 1.0);
 	FragNormal = vec4(normalize(Normal) * 0.5 + 0.5, 1.0);
 	FragVertex = vec4(ObjectPosition, 1.0);
+	FragDepth.r = gl_FragCoord.z;
 }
