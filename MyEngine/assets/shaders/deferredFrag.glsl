@@ -100,12 +100,18 @@ void main()
 	}
 	else if (FBOMode == 3) // Blur --- TODO: Gaussian Blur
 	{
-		// FragColor = textire(texFBOColor, textScreenCoords) * blurWeights[0];
-		// for(int i = 1; i != 5; i++)
-		// {
-		// 	FragColor += texture(texFBOColor, vec2(textScreenCoords) + vec2(0.0, blurOffsets[i])) * blurWeights[i];
-		// }
-		// FragColor = vec4(sum.rgb, 1.0);
+		const float blurSizeH = 1.0 / pixelSize.x;
+		const float blurSizeW = 1.0 / pixelSize.y;
+
+		vec4 sum = vec4(0.0);
+		for(int i = -4; i <= 4; i++)
+		{
+			for(int j = -4; j <= 4; j++)
+			{
+				sum += texture(texFBOColor, vec2(textScreenCoords.x + i * blurSizeH, textScreenCoords.y + j * blurSizeW)) / 81.0f;
+			}
+		}
+		FragColor = vec4(sum.rgb, 1.0);
 	}
 	else if (FBOMode == 4) // Edge Detection with Colors for some reason
 	{
@@ -124,16 +130,10 @@ void main()
 	}
 	else if (FBOMode == 5) // Toon Shading
 	{
-// 		float SobelNormalHorizontal(sampler2D texMap, vec2 texCoord, vec2 pixelSize);
-// float SobelNormalVertical(sampler2D texMap, vec2 texCoord, vec2 pixelSize);
-// float SobelDepthHorizontal(sampler2D texMap, vec2 texCoord, vec2 pixelSize);
-// float SobelDepthVertical(sampler2D texMap, vec2 texCoord, vec2 pixelSize);
-
 		float SobelDepth = SobelDepthHorizontal(texFBODepth, textScreenCoords, pixelSize) * SobelDepthVertical(texFBODepth, textScreenCoords, pixelSize);
 		float SobelNormal = SobelNormalHorizontal(texFBONormal, textScreenCoords, pixelSize) * SobelNormalVertical(texFBONormal, textScreenCoords, pixelSize);
 
 		FragColor = vec4(result.rgb * SobelDepth * SobelNormal * stepFloat, 1.0);
-		//FragColor.rgb = vec3(SobelDepth, SobelNormal, stepFloat);
 	}
 	else if (FBOMode == 6) // Night Vision TODO: Improve
 	{
@@ -148,6 +148,25 @@ void main()
 		float greenOut = clamp(0.5 * (intensity - 0.5) + 0.5, 0.0, 1.0);
 		vec3 outColor = vec3(0, greenOut, 0);
 
+		FragColor = vec4(outColor, 1.0);
+	}
+	else if(FBOMode == 7)
+	{
+		int samples = 128;
+		float intensity = 0.1;
+		float decay = 0.96875;
+		vec2 texCoords = textScreenCoords;
+		vec2 direction = vec2(0.5) - texCoords;
+		direction /= samples;
+		vec3 outColor = texture(texFBOColor, texCoords).rgb;
+
+
+		for(int i = 0; i != samples; i++)
+		{
+			outColor += texture(texFBOColor, texCoords).rgb * intensity;
+			intensity *= decay;
+			texCoords += direction;
+		}
 		FragColor = vec4(outColor, 1.0);
 	}
 
