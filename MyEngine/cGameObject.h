@@ -17,7 +17,8 @@ class cGameObject
 {
 public:
 	glm::vec3 Position, Scale;
-	glm::quat OrientationQuat, OrientationEuler;
+	glm::quat OrientationQuat;
+	glm::vec3 OrientationEuler;
 
 	cModel* Model;
 

@@ -40,6 +40,9 @@ std::vector< cGameObject * > GOSkybox;
 int currentSkybox = 0;
 cGameObject * FBOPlane;
 
+std::vector<cSkinnedGameObject*> GOSkinnedObjects;
+int currentSMGO = 0;
+
 float currentFrame;
 double lastTime;
 std::string fpsString;
@@ -54,6 +57,7 @@ void RenderScene();
 void RenderFboScene();
 void RenderSkybox();
 void RenderText();
+void RenderSMs();
 
 int width = 1600;
 int height = 900;
@@ -121,7 +125,7 @@ int main(int argc, char **argv)
 	FBOs.push_back(new cFBO(width, height));
 
 	Nanosuit = new cGameObject("Nanosuit", "assets/models/nanosuit/nanosuit.obj", glm::vec3(7.0f, 0.0f, 0.0f), glm::vec3(0.2), glm::vec3(0.0f));	
-	SanFran = new cGameObject("Tree", "assets/models/sanfrancisco/houseSF.obj", glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(0.5f), glm::vec3(90.0f, 90.0f, 0.0f));
+	SanFran = new cGameObject("Tree", "assets/models/sanfrancisco/houseSF.obj", glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(0.5f), glm::vec3(0.0f, 0.0f, 0.0f));
 	FBOPlane = new cGameObject("FBOPlane", "assets/models/FBOPlane/FboPlane.obj", glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(1.0f), glm::vec3(0.0f, 0.0f, 90.0f));
 	GOVec.push_back(Nanosuit);
 	GOVec.push_back(SanFran);
@@ -135,8 +139,8 @@ int main(int argc, char **argv)
 
 	Text = new cText("assets/fonts/04B_30__.TTF");
 
-	ArmySoldier = new cSkinnedGameObject("DarkKnight", "assets/RPG Character Animation Pack/Animations/Unarmed/RPG-Character@Unarmed-Idle.FBX", glm::vec3(15.0f, 0.0f, 0.0f), glm::vec3(0.01f), glm::vec3(0.0f, 0.0f, 0.0f));
 
+	GOSkinnedObjects.push_back(new cSkinnedGameObject("DarkKnight", "assets/RPG Character Animation Pack/Models/Characters/FBX 2013/RPG-Character.FBX", glm::vec3(15.0f, 0.0f, 0.0f), glm::vec3(0.01f), glm::vec3(0.0f, 0.0f, 0.0f)));
 
 	lastTime = glfwGetTime();
 	
@@ -170,19 +174,14 @@ int main(int argc, char **argv)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		Shader->SetInteger("isSecondPass", false);
-		RenderSkybox();
 		RenderScene();
+		RenderSMs();
+		RenderSkybox();
 		RenderText();
 
 
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, ArmySoldier->Position);
-		model = glm::rotate(model, glm::radians(ArmySoldier->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(ArmySoldier->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(ArmySoldier->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::scale(model, ArmySoldier->Scale);
-		Shader->SetMatrix4("model", model, true);
-		ArmySoldier->Draw(*Shader);
+
+		
 
 
 
@@ -228,6 +227,24 @@ int main(int argc, char **argv)
 
 	glfwTerminate();
 	return 0;
+}
+
+void RenderSMs()
+{
+	Shader->Use();
+	Shader->SetInteger("isSkinnedMesh", true);
+	for (int i = 0; i != GOSkinnedObjects.size(); i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, GOSkinnedObjects[i]->Position);
+		model = glm::rotate(model, glm::radians(GOSkinnedObjects[i]->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(GOSkinnedObjects[i]->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(GOSkinnedObjects[i]->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, GOSkinnedObjects[i]->Scale);
+		Shader->SetMatrix4("model", model, true);
+		GOSkinnedObjects[i]->Draw(*Shader);
+	}
+	Shader->SetInteger("isSkinnedMesh", false);
 }
 
 void RenderScene()
@@ -475,6 +492,22 @@ void processInput(GLFWwindow *window)
 			currentLight = 0;		
 	}
 
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+	{
+		GOSkinnedObjects[currentSMGO]->OrientationEuler.x += 0.5f;
+	}
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+	{
+		GOSkinnedObjects[currentSMGO]->OrientationEuler.x -= 0.5f;
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+	{
+		GOSkinnedObjects[currentSMGO]->OrientationEuler.z += 0.5f;
+	}
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+	{
+		GOSkinnedObjects[currentSMGO]->OrientationEuler.z -= 0.5f;
+	}
 
 }
 

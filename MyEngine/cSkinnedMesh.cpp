@@ -24,7 +24,8 @@ glm::mat4 AIMatrixToGLMMatrix(const aiMatrix4x4& mat)
 
 void cSkinnedMesh::sVertexBoneData::AddBoneData(unsigned int BoneID, float Weight)
 {
-	for (unsigned int Index = 0; Index < sizeof(this->Ids) / sizeof(this->Ids[0]); Index++)
+	unsigned int size = sizeof(this->Ids) / sizeof(this->Ids[0]);
+	for (unsigned int Index = 0; Index < size; Index++)
 	{
 		if (this->Weights[Index] == 0.0f)
 		{
@@ -59,7 +60,7 @@ cSkinnedMesh::~cSkinnedMesh()
 
 bool cSkinnedMesh::LoadMeshFromFile(const std::string &filename)
 {
-	unsigned int Flags = aiProcess_Triangulate | aiProcess_GenSmoothNormals| aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph | aiProcess_JoinIdenticalVertices;
+	unsigned int Flags = aiProcess_Triangulate | aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph | aiProcess_JoinIdenticalVertices;
 
 	this->Scene = this->Importer.ReadFile(filename.c_str(), Flags);
 	if (this->Scene)
@@ -83,6 +84,10 @@ bool cSkinnedMesh::LoadMeshFromFile(const std::string &filename)
 bool cSkinnedMesh::Initialize(void)
 {
 	this->NumVertices = this->Scene->mMeshes[0]->mNumVertices;
+	for (int i = 0; i != this->Scene->mNumMeshes; i++)
+	{
+		printf("%d", this->Scene->mMeshes[i]->mNumBones);
+	}
 
 	// This is the vertex information for JUST the bone stuff
 	this->VecVertexBoneData.resize(this->NumVertices);
@@ -588,7 +593,11 @@ std::vector<sTexture> cSkinnedMesh::loadMaterialTextures(aiMaterial * mat, aiTex
 
 unsigned int SMTextureFromFile(const char *path, const std::string &directory, bool gamma)
 {
-	std::string filename = std::string(path);
+	std::string pathString(path);
+	std::size_t count = pathString.find_last_of("/\\");
+	std::string filename = pathString.substr(count + 1, pathString.size());
+
+	//std::string filename = std::string(path);
 	filename = directory + '/' + filename;
 
 	unsigned int textureID;

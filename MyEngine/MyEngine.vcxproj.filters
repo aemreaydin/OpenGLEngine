@@ -98,6 +98,12 @@
     <ClInclude Include="cSkinnedGameObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="sAnimationState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sStateDetails.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\simpleFragment.glsl">

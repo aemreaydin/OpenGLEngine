@@ -130,6 +130,12 @@ void cShader::SetMatrix4(const GLchar * name, const glm::mat4 & matrix, GLboolea
 		this->Use();
 	glUniformMatrix4fv(glGetUniformLocation(this->ID, name), 1, GL_FALSE, glm::value_ptr(matrix));
 }
+void cShader::SetMatrix4(const GLchar* name, GLsizei count, const glm::mat4& matrix, GLboolean useShader)
+{
+	if (useShader)
+		this->Use();
+	glUniformMatrix4fv(glGetUniformLocation(this->ID, name), count, GL_FALSE, glm::value_ptr(matrix));
+}
 
 void cShader::checkCompileErrors(GLuint object, std::string type)
 {

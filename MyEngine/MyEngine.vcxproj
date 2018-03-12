@@ -154,6 +154,8 @@
     <ClInclude Include="cSkybox.h" />
     <ClInclude Include="cText.h" />
     <ClInclude Include="eDepthType.h" />
+    <ClInclude Include="sAnimationState.h" />
+    <ClInclude Include="sStateDetails.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\simpleFragment.glsl" />

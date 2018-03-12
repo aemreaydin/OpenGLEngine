@@ -6,7 +6,6 @@ layout(location=2) out vec4 FragVertex;
 in vec3 Normal;
 in vec3 ObjectPosition;
 in vec2 TexCoords;
-in vec3 LightPosition;
 
 // Light Properties
 struct sLight
