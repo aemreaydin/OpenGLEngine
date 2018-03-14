@@ -71,13 +71,22 @@ bool cSkinnedMesh::LoadMeshFromFile(const std::string &filename)
 		this->GlobalInverseTransformation = AIMatrixToGLMMatrix(Scene->mRootNode->mTransformation);
 		this->GlobalInverseTransformation = glm::inverse(this->GlobalInverseTransformation);
 
-		if (!this->Initialize())
-		{
-			return false;
-		}
+		//this->Initialize();
 	}
 	this->directory = filename.substr(0, filename.find_last_of('/'));
 	processNode(Scene->mRootNode, Scene);
+	return true;
+}
+
+bool cSkinnedMesh::Initialize(int index)
+{
+	this->NumVertices = this->Scene->mMeshes[index]->mNumVertices;
+
+	this->VecVertexBoneData.clear();
+	this->VecVertexBoneData.resize(this->NumVertices);
+
+	this->LoadBones(this->Scene->mMeshes[index], this->VecVertexBoneData);
+
 	return true;
 }
 
@@ -449,6 +458,11 @@ float cSkinnedMesh::GetDuration(void)
 	float duration = (float)(this->Scene->mAnimations[0]->mDuration / this->Scene->mAnimations[0]->mTicksPerSecond);
 	return duration;
 }
+float cSkinnedMesh::GetAnimationDuration(const aiScene* scene)
+{
+	float duration = (float)(scene->mAnimations[0]->mDuration / scene->mAnimations[0]->mTicksPerSecond);
+	return duration;
+}
 
 
 void cSkinnedMesh::Draw(cShader shader)
@@ -462,6 +476,9 @@ void cSkinnedMesh::processNode(aiNode * node, const aiScene * scene)
 	for (unsigned int i = 0; i < node->mNumMeshes; i++)
 	{
 		aiMesh * mesh = scene->mMeshes[node->mMeshes[i]];
+		
+		//this->Initialize(i);
+		this->Initialize(i);
 		this->vecMeshes.push_back(processMesh(mesh, scene));
 	}
 	for (unsigned int i = 0; i < node->mNumChildren; i++)
@@ -475,6 +492,7 @@ cMesh cSkinnedMesh::processMesh(aiMesh * mesh, const aiScene * scene)
 	std::vector<sSkinnedMeshVertex> vertices;
 	std::vector<GLuint> indices;
 	std::vector<sTexture> textures;
+
 
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 	{

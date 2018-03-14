@@ -20,11 +20,18 @@ public:
 
 	cSkinnedGameObject(std::string modelName, std::string modelDir);
 	cSkinnedGameObject(std::string modelName, std::string modelDir, glm::vec3 position, glm::vec3 scale, glm::vec3 orientationEuler);
+	cSkinnedGameObject(std::string modelName, std::string modelDir, glm::vec3 position, glm::vec3 scale, glm::vec3 orientationEuler, std::vector<std::string> charAnimations);
+	cSkinnedGameObject(std::string modelName, std::string modelDir, glm::vec3 position, glm::vec3 scale, glm::vec3 orientationEuler, std::map<int, std::string> charAnimations);
+	cSkinnedGameObject(std::string modelName, std::string modelDir, glm::vec3 position, glm::vec3 scale, glm::vec3 orientationEuler, float speed, std::map<int, std::string> charAnimations);
 	void Draw(cShader Shader);
 
+	std::vector<std::string> vecCharacterAnimations;
+	std::map<int, std::string> mapCharacterAnimations;
+	sAnimationState* defaultAnimState, *curAnimState;
+	std::string animToPlay;
+	float Speed;
 private:
 	cSkinnedMesh* Model;
 	std::vector<glm::mat4> vecBoneTransformation;
-	sAnimationState* animState;
 };
 #endif // !_GAME_OBJECT_

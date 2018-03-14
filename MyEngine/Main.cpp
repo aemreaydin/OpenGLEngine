@@ -46,6 +46,8 @@ int currentSMGO = 0;
 float currentFrame;
 double lastTime;
 std::string fpsString;
+bool isWireframe = false;
+bool isIn3Person = true;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -78,6 +80,13 @@ int depthIndex = 0;
 
 int FBOMode = 0;
 
+glm::mat4 view;
+glm::mat4 projection;
+
+
+
+
+
 TEST(TC_INIT, InitializeGLFW)
 {
 	GLCalls = new cGLCalls(width, height, "AssimpImport");
@@ -90,6 +99,7 @@ TEST(TC_CREATE_WINDOW, CreateGLWindow)
 
 int main(int argc, char **argv)
 {
+
 	::testing::InitGoogleTest(&argc, argv);
 	RUN_ALL_TESTS();	
 
@@ -140,7 +150,32 @@ int main(int argc, char **argv)
 	Text = new cText("assets/fonts/04B_30__.TTF");
 
 
-	GOSkinnedObjects.push_back(new cSkinnedGameObject("DarkKnight", "assets/RPG Character Animation Pack/Models/Characters/FBX 2013/RPG-Character.FBX", glm::vec3(15.0f, 0.0f, 0.0f), glm::vec3(0.01f), glm::vec3(0.0f, 0.0f, 0.0f)));
+	std::map<int, std::string> mapAnimations;
+	mapAnimations[0] = "assets/animatedModels/RTS Mini Legion Footman/Animations/Footman_Walk.fbx";
+	mapAnimations[1] = "assets/animatedModels/RTS Mini Legion Footman/Animations/Footman_Run.fbx";
+	mapAnimations[2] = "assets/animatedModels/RTS Mini Legion Footman/Animations/Footman_Attack01.fbx";
+	mapAnimations[3] = "assets/animatedModels/RTS Mini Legion Footman/Animations/Footman_Victory.fbx";
+	GOSkinnedObjects.push_back(new cSkinnedGameObject("Exo", "assets/animatedModels/RTS Mini Legion Footman/Animations/Footman_Idle.fbx", glm::vec3(0.0f, 8.0f, 5.0f), glm::vec3(1.0f), glm::vec3(0.0f, 0.0f, 0.0f), mapAnimations));
+
+	
+	
+	mapAnimations[0] = "assets/animatedModels/Character_Monster/Animations/Monster@Walk.FBX";
+	mapAnimations[1] = "assets/animatedModels/Character_Monster/Animations/Monster@Run.FBX";
+	mapAnimations[2] = "assets/animatedModels/Character_Monster/Animations/Monster@Attack.FBX";
+	mapAnimations[3] = "assets/animatedModels/Character_Monster/Animations/Monster@Jump.FBX";
+	GOSkinnedObjects.push_back(new cSkinnedGameObject("Exo", "assets/animatedModels/Character_Monster/Animations/Monster@Idle.FBX", glm::vec3(20.0f, 0.0f, 0.0f), glm::vec3(0.01f), glm::vec3(0.0f, 0.0f, 0.0f), mapAnimations));
+
+
+	//mapAnimations.clear();
+	//mapAnimations["Idle"] = "assets/Horse/Animation/Horse_Idle.fbx";
+	//mapAnimations["Walk"] = "assets/Horse/Animation/Horse_Walk.fbx";
+
+
+
+
+
+
+
 
 	lastTime = glfwGetTime();
 	
@@ -166,6 +201,8 @@ int main(int argc, char **argv)
 		glfwGetFramebufferSize(GLCalls->GetWindow(), &width, &height);
 
 
+		projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
+		view = camera.GetViewMatrix();
 
 		FBOs[0]->BindFBO();
 		FBOs[0]->ClearBuffers();
@@ -231,27 +268,30 @@ int main(int argc, char **argv)
 
 void RenderSMs()
 {
+	projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
+	view = camera.GetViewMatrix();
+	if (isWireframe)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	else
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	Shader->Use();
 	Shader->SetInteger("isSkinnedMesh", true);
+	Shader->SetMatrix4("projection", projection);
+	Shader->SetMatrix4("view", view);
 	for (int i = 0; i != GOSkinnedObjects.size(); i++)
 	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, GOSkinnedObjects[i]->Position);
-		model = glm::rotate(model, glm::radians(GOSkinnedObjects[i]->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(GOSkinnedObjects[i]->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(GOSkinnedObjects[i]->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::scale(model, GOSkinnedObjects[i]->Scale);
-		Shader->SetMatrix4("model", model, true);
 		GOSkinnedObjects[i]->Draw(*Shader);
 	}
 	Shader->SetInteger("isSkinnedMesh", false);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void RenderScene()
 {
 	Shader->Use();
-	glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
-	glm::mat4 view = camera.GetViewMatrix();
+	//glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
+	glm::mat4 view = view = camera.GetViewMatrix();
 	Shader->SetMatrix4("projection", projection);
 	Shader->SetMatrix4("view", view);
 	Shader->SetVector3f("eyePos", camera.GetPosition());
@@ -315,40 +355,6 @@ void RenderScene()
 
 	//glStencilMask(0xFF);
 	//glEnable(GL_DEPTH_TEST);
-}
-void RenderFboScene()
-{
-	Shader->Use();
-	glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
-	glm::mat4 view = camera.GetViewMatrix();
-	//glm::mat4 view = glm::lookAt(camera.GetPosition(), FBOPlane->Position, glm::vec3(0.0f, 1.0f, 0.0f));
-
-	Shader->SetMatrix4("projection", projection, true);
-	Shader->SetMatrix4("view", view, true);
-	Shader->SetVector3f("eyePos", camera.GetPosition());
-
-	LampShader->Use();
-	LampShader->SetMatrix4("projection", projection, true);
-	LampShader->SetMatrix4("view", view, true);
-	LightManager->LoadLightsIntoShader(*Shader);
-
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, FBOPlane->Position);
-	model = glm::rotate(model, glm::radians(FBOPlane->OrientationEuler.x), glm::vec3(1.0f, 0.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(FBOPlane->OrientationEuler.y), glm::vec3(0.0f, 1.0f, 0.0f));
-	model = glm::rotate(model, glm::radians(FBOPlane->OrientationEuler.z), glm::vec3(0.0f, 0.0f, 1.0f));
-	model = glm::scale(model, FBOPlane->Scale);
-	Shader->SetMatrix4("model", model, true);
-	FBOPlane->Draw(*Shader);
-
-	for (int i = 0; i < LightManager->NumLights; i++)
-	{
-		glm::mat4 lightModel = glm::mat4(1.0f);
-		lightModel = glm::translate(lightModel, LightManager->Lights[i].position);
-		lightModel = glm::scale(lightModel, glm::vec3(0.2f));
-		Shader->SetMatrix4("lightModel", lightModel, true);
-	}
-	LightManager->DrawLightsIntoScene(*LampShader);
 }
 void RenderSkybox()
 {
@@ -426,6 +432,20 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mode
 	{
 		FBOMode = 9;
 	}
+	if (glfwGetKey(window, GLFW_KEY_COMMA))
+	{
+		isWireframe = !isWireframe;
+	}
+	if (glfwGetKey(window, GLFW_KEY_C))
+	{
+		isIn3Person = !isIn3Person;
+	}
+	if (glfwGetKey(window, GLFW_KEY_TAB))
+	{
+		currentSMGO++;
+		if (currentSMGO == GOSkinnedObjects.size())
+			currentSMGO = 0;
+	}
 }
 
 void processInput(GLFWwindow *window)
@@ -433,14 +453,15 @@ void processInput(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyboard(FORWARD, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyboard(LEFT, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboard(RIGHT, deltaTime);
+	
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			camera.ProcessKeyboard(FORWARD, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			camera.ProcessKeyboard(BACKWARD, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			camera.ProcessKeyboard(LEFT, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			camera.ProcessKeyboard(RIGHT, deltaTime);
 
 	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
 	{
@@ -494,19 +515,38 @@ void processInput(GLFWwindow *window)
 
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
 	{
-		GOSkinnedObjects[currentSMGO]->OrientationEuler.x += 0.5f;
+		GOSkinnedObjects[currentSMGO]->Position.z += 0.05f;
+		GOSkinnedObjects[currentSMGO]->animToPlay = GOSkinnedObjects[currentSMGO]->mapCharacterAnimations[0];	
+		GOSkinnedObjects[currentSMGO]->defaultAnimState->defaultAnimation.curTime = 0.0f;
 	}
-	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+	else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) // TODO: Move animation backwards
 	{
-		GOSkinnedObjects[currentSMGO]->OrientationEuler.x -= 0.5f;
+		GOSkinnedObjects[currentSMGO]->Position.z -= 0.05f;
+		GOSkinnedObjects[currentSMGO]->animToPlay = GOSkinnedObjects[currentSMGO]->mapCharacterAnimations[0];
+		GOSkinnedObjects[currentSMGO]->defaultAnimState->defaultAnimation.curTime = 0.0f;
 	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+	else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
 	{
 		GOSkinnedObjects[currentSMGO]->OrientationEuler.z += 0.5f;
 	}
-	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+	else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
 	{
 		GOSkinnedObjects[currentSMGO]->OrientationEuler.z -= 0.5f;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+	{
+		GOSkinnedObjects[currentSMGO]->animToPlay = GOSkinnedObjects[currentSMGO]->mapCharacterAnimations[3];
+		GOSkinnedObjects[currentSMGO]->defaultAnimState->defaultAnimation.curTime = 0.0f;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+	{
+		GOSkinnedObjects[currentSMGO]->animToPlay = GOSkinnedObjects[currentSMGO]->mapCharacterAnimations[2];
+		GOSkinnedObjects[currentSMGO]->defaultAnimState->defaultAnimation.curTime = 0.0f;
+	}
+	else
+	{
+		GOSkinnedObjects[currentSMGO]->animToPlay = GOSkinnedObjects[currentSMGO]->defaultAnimState->defaultAnimation.name;
+		GOSkinnedObjects[currentSMGO]->curAnimState->defaultAnimation.curTime = 0.0f;
 	}
 
 }
@@ -538,6 +578,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	lastY = ypos;
 
 	camera.ProcessMouseMovement(xoffset, yoffset);
+
 }
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called

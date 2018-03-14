@@ -22,6 +22,18 @@ struct sStateDetails
 		}
 		return isReset;
 	}
+
+	bool DecrementTime(bool bResetToZero = true)
+	{
+		bool isReset = false;
+		this->curTime -= this->frameStepTime;
+		if (this->curTime <= 0.0f)
+		{
+			this->curTime = 1.0f;
+			isReset = true;
+		}
+		return isReset;
+	}
 };
 
 #endif

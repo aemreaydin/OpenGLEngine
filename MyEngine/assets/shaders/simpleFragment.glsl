@@ -78,6 +78,7 @@ void main()
 
 		vec4 colorAtThisPixel = texture(texFBOColor, textScreenCoords).rgba;
 		vec4 normalAtThisPixel = texture(texFBONormal, textScreenCoords).rgba;
+		normalAtThisPixel.rgb = normalAtThisPixel.rgb * 0.5 + 0.5;
 		vec4 vertexAtThisPixel = texture(texFBOVertex, textScreenCoords).rgba;
 
 
@@ -152,9 +153,13 @@ void main()
 		}
 		else if(FBOMode == 9) // Cos-Sine Time
 		{
-			FragColor = vec4(texture(texFBOColor, textScreenCoords + 
-				0.005*vec2(sin(time+1024.0*textScreenCoords.x), 
-				cos(time+768.0*textScreenCoords))).rgb, 1.0);
+			const int levels = 3;
+			const float scaleFactor = 1.0 / levels;
+
+			vec3 dir = normalize(Lights[0].Position - vertexAtThisPixel.rgb);
+			float cosine = max(0.0, dot(dir, normalAtThisPixel.rgb));
+
+			FragColor = vec4(result.rgb * floor(cosine * levels)  * scaleFactor, 1.0f);
 		}
 		return;
 	}
@@ -183,9 +188,11 @@ vec3 calcDirectionalLight(sLight light, vec3 normal, vec3 viewDir, vec4 textureC
 vec3 calcPointLight(sLight light, vec3 normal, vec3 objPosition, vec3 viewDir, vec4 textureCol)
 {
 	vec3 lightDir = normalize(light.Position - objPosition);
+	vec3 objPosNorm = normalize(vec3(objPosition));
+	vec3 h = normalize(objPosNorm + lightDir);
 	
 	float diffuseRatio = max(dot(normal, lightDir), 0.0);
-	float specularRatio = pow(max(dot(viewDir, reflect(-lightDir, normal)), 0.0), 64);
+	float specularRatio = pow(max(dot(h, normal), 0.0), 64);
 	
 	float dist = length(light.Position - objPosition);
 	float attenuation = 1.0 / (light.Attenuation.x + light.Attenuation.y * dist + light.Attenuation.z * (dist * dist));

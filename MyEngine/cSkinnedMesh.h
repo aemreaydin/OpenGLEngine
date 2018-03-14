@@ -60,10 +60,12 @@ public:
 
 	float FindAnimationTotalTime(std::string animationName);
 	float GetDuration();
+	float GetAnimationDuration(const aiScene* scene);
 
 	void BoneTransform(float time, std::string animationName, std::vector<glm::mat4>& finalTransformation, std::vector<glm::mat4>& globals, std::vector<glm::mat4>& offsets);
 
 	bool Initialize();
+	bool Initialize(int index);
 
 	void CalcInterpolatedRotation(float AnimationTime, const aiNodeAnim* pNodeAnim, aiQuaternion& out);
 	void CalcInterpolatedPosition(float AnimationTime, const aiNodeAnim* pNodeAnim, aiVector3D& out);
