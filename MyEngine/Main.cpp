@@ -158,12 +158,24 @@ int main(int argc, char **argv)
 	GOSkinnedObjects.push_back(new cSkinnedGameObject("Exo", "assets/animatedModels/RTS Mini Legion Footman/Animations/Footman_Idle.fbx", glm::vec3(0.0f, 8.0f, 5.0f), glm::vec3(1.0f), glm::vec3(0.0f, 0.0f, 0.0f), mapAnimations));
 
 	
-	
 	mapAnimations[0] = "assets/animatedModels/Character_Monster/Animations/Monster@Walk.FBX";
 	mapAnimations[1] = "assets/animatedModels/Character_Monster/Animations/Monster@Run.FBX";
 	mapAnimations[2] = "assets/animatedModels/Character_Monster/Animations/Monster@Attack.FBX";
 	mapAnimations[3] = "assets/animatedModels/Character_Monster/Animations/Monster@Jump.FBX";
 	GOSkinnedObjects.push_back(new cSkinnedGameObject("Exo", "assets/animatedModels/Character_Monster/Animations/Monster@Idle.FBX", glm::vec3(20.0f, 0.0f, 0.0f), glm::vec3(0.01f), glm::vec3(0.0f, 0.0f, 0.0f), mapAnimations));
+
+
+	mapAnimations[0] = "assets/animatedModels/FreeVoxelGirl/Animations/FreeVoxelGirl@walk.fbx";
+	mapAnimations[1] = "assets/animatedModels/FreeVoxelGirl/Animations/FreeVoxelGirl@run.fbx";
+	mapAnimations[2] = "assets/animatedModels/FreeVoxelGirl/Animations/FreeVoxelGirl@damage.fbx";
+	mapAnimations[3] = "assets/animatedModels/FreeVoxelGirl/Animations/FreeVoxelGirl@jump.fbx";
+	GOSkinnedObjects.push_back(new cSkinnedGameObject("Exo", "assets/animatedModels/FreeVoxelGirl/Animations/FreeVoxelGirl@idle.fbx", glm::vec3(23.0f, 0.0f, 0.0f), glm::vec3(0.01f), glm::vec3(0.0f, 0.0f, 0.0f), mapAnimations));
+
+	//mapAnimations[0] = "assets/animatedModels/amanda/Amanda/animations/amanda@walkneutral.fbx";
+	//mapAnimations[1] = "assets/animatedModels/amanda/Amanda/animations/amanda@runneutral.fbx";
+	//mapAnimations[2] = "assets/animatedModels/amanda/Amanda/animations/amanda@crouchidle.fbx";
+	//mapAnimations[3] = "assets/animatedModels/amanda/Amanda/animations/amanda@jumping.fbx";
+	//GOSkinnedObjects.push_back(new cSkinnedGameObject("Exo", "assets/animatedModels/amanda/Amanda/animations/amanda@idle.fbx", glm::vec3(26.0f, 0.0f, 0.0f), glm::vec3(0.01f), glm::vec3(0.0f, 0.0f, 0.0f), mapAnimations));
 
 
 	//mapAnimations.clear();
@@ -200,6 +212,9 @@ int main(int argc, char **argv)
 		processInput(GLCalls->GetWindow());
 		glfwGetFramebufferSize(GLCalls->GetWindow(), &width, &height);
 
+
+
+		GOSkinnedObjects[currentSMGO]->Move(deltaTime);
 
 		projection = glm::perspective(glm::radians(camera.GetZoom()), (float)width / (float)height, 0.1f, 100.0f);
 		view = camera.GetViewMatrix();
@@ -515,23 +530,23 @@ void processInput(GLFWwindow *window)
 
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
 	{
-		GOSkinnedObjects[currentSMGO]->Position.z += 0.05f;
+		GOSkinnedObjects[currentSMGO]->CurrentSpeed = GOSkinnedObjects[currentSMGO]->Speed;
 		GOSkinnedObjects[currentSMGO]->animToPlay = GOSkinnedObjects[currentSMGO]->mapCharacterAnimations[0];	
 		GOSkinnedObjects[currentSMGO]->defaultAnimState->defaultAnimation.curTime = 0.0f;
 	}
 	else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) // TODO: Move animation backwards
 	{
-		GOSkinnedObjects[currentSMGO]->Position.z -= 0.05f;
+		GOSkinnedObjects[currentSMGO]->CurrentSpeed = -GOSkinnedObjects[currentSMGO]->Speed;
 		GOSkinnedObjects[currentSMGO]->animToPlay = GOSkinnedObjects[currentSMGO]->mapCharacterAnimations[0];
 		GOSkinnedObjects[currentSMGO]->defaultAnimState->defaultAnimation.curTime = 0.0f;
 	}
 	else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
 	{
-		GOSkinnedObjects[currentSMGO]->OrientationEuler.z += 0.5f;
+		GOSkinnedObjects[currentSMGO]->CurrentTurnSpeed = -GOSkinnedObjects[currentSMGO]->TurnSpeed;
 	}
 	else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
 	{
-		GOSkinnedObjects[currentSMGO]->OrientationEuler.z -= 0.5f;
+		GOSkinnedObjects[currentSMGO]->CurrentTurnSpeed = GOSkinnedObjects[currentSMGO]->TurnSpeed;
 	}
 	else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
 	{
@@ -547,6 +562,8 @@ void processInput(GLFWwindow *window)
 	{
 		GOSkinnedObjects[currentSMGO]->animToPlay = GOSkinnedObjects[currentSMGO]->defaultAnimState->defaultAnimation.name;
 		GOSkinnedObjects[currentSMGO]->curAnimState->defaultAnimation.curTime = 0.0f;
+		GOSkinnedObjects[currentSMGO]->CurrentSpeed = 0;
+		GOSkinnedObjects[currentSMGO]->CurrentTurnSpeed = 0;
 	}
 
 }

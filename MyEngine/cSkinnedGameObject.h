@@ -24,12 +24,15 @@ public:
 	cSkinnedGameObject(std::string modelName, std::string modelDir, glm::vec3 position, glm::vec3 scale, glm::vec3 orientationEuler, std::map<int, std::string> charAnimations);
 	cSkinnedGameObject(std::string modelName, std::string modelDir, glm::vec3 position, glm::vec3 scale, glm::vec3 orientationEuler, float speed, std::map<int, std::string> charAnimations);
 	void Draw(cShader Shader);
-
+	void Move(float deltaTime);
 	std::vector<std::string> vecCharacterAnimations;
 	std::map<int, std::string> mapCharacterAnimations;
 	sAnimationState* defaultAnimState, *curAnimState;
 	std::string animToPlay;
 	float Speed;
+	float TurnSpeed;
+	float CurrentSpeed;
+	float CurrentTurnSpeed;
 private:
 	cSkinnedMesh* Model;
 	std::vector<glm::mat4> vecBoneTransformation;

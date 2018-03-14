@@ -80,7 +80,8 @@ cSkinnedGameObject::cSkinnedGameObject(std::string modelName, std::string modelD
 	{
 		this->Model->LoadMeshAnimation(mapIter->second);
 	}
-	this->Speed = 0.25f;
+	this->TurnSpeed = 50.0f;
+	this->Speed = 1.0f;
 	this->animToPlay = this->defaultAnimState->defaultAnimation.name;
 
 }
@@ -112,8 +113,19 @@ cSkinnedGameObject::cSkinnedGameObject(std::string modelName, std::string modelD
 	}
 
 	this->animToPlay = this->defaultAnimState->defaultAnimation.name;
+
+	this->TurnSpeed = 50.0f;
 	this->Speed = speed;
 }
+void cSkinnedGameObject::Move(float deltaTime)
+{
+	this->OrientationEuler.y += deltaTime * CurrentTurnSpeed;
+	float distance = this->CurrentSpeed * deltaTime;
+	float dx = distance * glm::sin(glm::radians(this->OrientationEuler.y));
+	float dz = distance * glm::cos(glm::radians(this->OrientationEuler.y));
+	this->Position += glm::vec3(dx, 0.0f, dz);
+}
+
 void cSkinnedGameObject::Draw(cShader Shader)
 {
 	//std::string animToPlay = "";
